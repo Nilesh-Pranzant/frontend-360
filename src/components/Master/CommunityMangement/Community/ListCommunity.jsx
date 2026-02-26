@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Plus, Download, RefreshCw } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
-import { useSweetAlert } from "../../../../ui/Common/SweetAlert";
+import { useToast } from "../../../../ui/common/CostumeTost";
+import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import SearchBar from "../../../../ui/Common/SearchBar";
 import RecordsPerPage from "../../../../ui/Common/RecordsPerPage";
 import Table from "../../../../ui/Common/Table";
@@ -13,13 +14,12 @@ import CommonDialog from "../../../../ui/Common/CommonDialog";
 import AddCommunity from "./AddCommunity";
 import ViewCommunity from "./ViewCommunity";
 import EditCommunity from "./EditCommunity";
-import { useLocation } from "react-router-dom";
 import Pagination from "../../../../ui/Common/Pagination";
 
 const ListCommunity = () => {
   const { theme, themeUtils } = useTheme();
   const navigate = useNavigate();
-  const { showAlert, AlertComponent } = useSweetAlert();
+  const toast = useToast();
   const location = useLocation();
 
   // Ref to prevent double delete execution
@@ -33,7 +33,7 @@ const ListCommunity = () => {
   const [isViewDrawerOpen, setIsViewDrawerOpen] = useState(false);
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState(null);
-  
+
   // Static building images from free CDN sources
   const buildingImages = [
     "https://images.unsplash.com/photo-1545324418-cc1d3fa86c52?w=150&h=150&fit=crop", // Modern apartment
@@ -246,9 +246,9 @@ const ListCommunity = () => {
     perPage === "All" || perPage === Infinity || perPage <= 0
       ? filteredCommunities
       : filteredCommunities.slice(
-          (currentPage - 1) * perPage,
-          currentPage * perPage
-        );
+        (currentPage - 1) * perPage,
+        currentPage * perPage
+      );
 
   const totalPages =
     perPage === "All" || perPage === Infinity || perPage <= 0
@@ -256,67 +256,31 @@ const ListCommunity = () => {
       : Math.ceil(filteredCommunities.length / perPage);
 
   /* ================= ACTIONS ================= */
-  const handleDelete = async (communityId) => {
-    // Prevent double execution
-    if (deleteInProgress.current) {
-      console.log("Delete already in progress, skipping...");
-      return;
-    }
-    
-    deleteInProgress.current = true;
+  const handleDelete = (communityId) => {
+    if (deleteInProgress.current) return;
 
-    showAlert({
-      type: "warning",
-      title: "Are you sure?",
-      message: "Do you want to delete this Community?",
-      showConfirm: true,
-      confirmText: "Yes",
-      showCancel: true,
-      cancelText: "No",
-      variant: "modal",
-      onConfirm: async () => {
+    confirmDialog({
+      message: "Do you want to delete this Community? This action cannot be undone.",
+      header: "Delete Confirmation",
+      icon: "pi pi-exclamation-triangle",
+      acceptClassName: "p-button-danger",
+      acceptLabel: "Yes, Delete",
+      rejectLabel: "Cancel",
+      accept: async () => {
+        deleteInProgress.current = true;
         try {
-          // Simulate delete by filtering out the community
           setCommunities((prev) =>
             prev.filter((c) => c.community_id !== communityId)
           );
-          
-          // Add a small delay to ensure the modal is closed before showing toast
-          setTimeout(() => {
-            showAlert({
-              type: "success",
-              title: "Success",
-              message: "Community deleted successfully!",
-              autoClose: true,
-              autoCloseTime: 2500,
-              variant: "toast",
-              showConfirm: false,
-            });
-          }, 100);
+          toast.error("Deleted!", "Community deleted successfully.");
         } catch (error) {
           console.error("Delete failed:", error);
-          setTimeout(() => {
-            showAlert({
-              type: "error",
-              title: "Error",
-              message: "Failed to delete community. Please try again.",
-              autoClose: true,
-              autoCloseTime: 2500,
-              variant: "toast",
-              showConfirm: false,
-            });
-          }, 100);
+          toast.error("Delete Failed", "Failed to delete community. Please try again.");
         } finally {
-          // Reset the flag after a delay
-          setTimeout(() => {
-            deleteInProgress.current = false;
-          }, 2000);
+          setTimeout(() => { deleteInProgress.current = false; }, 1500);
         }
       },
-      onCancel: () => {
-        deleteInProgress.current = false;
-      },
-      onClose: () => {
+      reject: () => {
         deleteInProgress.current = false;
       },
     });
@@ -371,31 +335,14 @@ const ListCommunity = () => {
     link.download = `communities_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
 
-    showAlert({
-      type: "success",
-      title: "Export Successful",
-      message: "Communities exported to CSV successfully!",
-      autoClose: true,
-      autoCloseTime: 2500,
-      variant: "toast",
-      showConfirm: false,
-    });
+    toast.success("Export Successful", "Communities exported to CSV successfully!");
   };
 
   const handleRefresh = async () => {
     setLoading(true);
-    // Simulate a short delay for UI feedback
     setTimeout(() => {
       setLoading(false);
-      showAlert({
-        type: "info",
-        title: "Static Mode",
-        message: "Sync is not available in static demo mode.",
-        autoClose: true,
-        autoCloseTime: 2000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.info("Static Mode", "Sync is not available in static demo mode.");
     }, 500);
   };
 
@@ -450,8 +397,8 @@ const ListCommunity = () => {
           <img
             src={community.profile_picture}
             alt={community.community_name || "Community"}
-            className="w-10 h-10 rounded-full object-cover border-1"
-            style={{ 
+            className="w-10 h-10 rounded-full object-cover border"
+            style={{
               borderColor: theme.headerBg || "#6366f1",
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
             }}
@@ -502,9 +449,9 @@ const ListCommunity = () => {
         style={{
           color:
             community.manager_contact &&
-            !/^\+971[0-9]{9}$/.test(
-              community.manager_contact.replace(/[^\d+]/g, "")
-            )
+              !/^\+971[0-9]{9}$/.test(
+                community.manager_contact.replace(/[^\d+]/g, "")
+              )
               ? "#e53e3e"
               : themeUtils.getTextColor(true),
         }}
@@ -540,7 +487,7 @@ const ListCommunity = () => {
 
   return (
     <div className="space-y-4">
-      <AlertComponent />
+      <ConfirmDialog />
 
       {/* Header */}
       <CardHeader>
@@ -574,7 +521,7 @@ const ListCommunity = () => {
               >
                 Add
               </Button>
-             
+
               <Button
                 variant="success"
                 icon={Download}

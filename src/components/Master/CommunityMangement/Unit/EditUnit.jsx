@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
-import { useSweetAlert } from "../../../../ui/Common/SweetAlert";
+import { useToast } from "../../../../ui/common/CostumeTost";
 import Button from "../../../../ui/Common/Button";
 import Card, {
   CardHeader,
@@ -16,11 +16,11 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
-  const { showAlert, AlertComponent } = useSweetAlert();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   // Static data for dropdowns
   const [communities, setCommunities] = useState([]);
   const [properties, setProperties] = useState([]);
@@ -61,10 +61,10 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
 
   const loadUnitData = () => {
     setLoading(true);
-    
+
     // Get unit data from props, location state, or localStorage
     let unitData = null;
-    
+
     if (propUnit) {
       unitData = propUnit;
     } else if (location.state?.unit) {
@@ -78,7 +78,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
     if (unitData) {
       // Find community ID from community name
       const community = communities.find(c => c.community_name === unitData.community_name);
-      
+
       setForm({
         id: unitData.id || "",
         communityId: community?.community_id || unitData.community_id || "",
@@ -98,7 +98,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
         loadProperties(community?.community_id || unitData.community_id);
       }
     }
-    
+
     setLoading(false);
   };
 
@@ -144,12 +144,12 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
   // Handle community change
   const handleCommunityChange = (communityId) => {
     const selectedCommunity = communities.find(c => c.community_id === parseInt(communityId));
-    setForm({ 
-      ...form, 
-      communityId, 
+    setForm({
+      ...form,
+      communityId,
       communityName: selectedCommunity?.community_name || "",
-      propertyId: "", 
-      propertyName: "" 
+      propertyId: "",
+      propertyName: ""
     });
     setProperties([]);
     if (communityId) {
@@ -160,26 +160,26 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
   // Handle property change
   const handlePropertyChange = (propertyId) => {
     const selectedProperty = properties.find(p => p.property_id === parseInt(propertyId));
-    setForm({ 
-      ...form, 
-      propertyId, 
-      propertyName: selectedProperty?.property_name || "" 
+    setForm({
+      ...form,
+      propertyId,
+      propertyName: selectedProperty?.property_name || ""
     });
   };
 
   const handleSubmit = async () => {
     try {
       setSaving(true);
-      
+
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Get existing units from localStorage
       const existingUnits = JSON.parse(localStorage.getItem("units") || "[]");
-      
+
       // Find the unit to update
       const unitIndex = existingUnits.findIndex(u => u.id === form.id);
-      
+
       if (unitIndex !== -1) {
         // Update existing unit
         existingUnits[unitIndex] = {
@@ -195,19 +195,11 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
           community_id: parseInt(form.communityId),
           meter_number: form.meterNumber
         };
-        
+
         // Save back to localStorage
         localStorage.setItem("units", JSON.stringify(existingUnits));
 
-        showAlert({
-          type: "success",
-          title: "Success",
-          message: "Unit updated successfully!",
-          autoClose: true,
-          autoCloseTime: 2000,
-          variant: "toast",
-          showConfirm: false,
-        });
+        toast.warn("Success", "Unit updated successfully!");
 
         // Call success callback and close
         setTimeout(() => {
@@ -218,18 +210,10 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
       } else {
         throw new Error("Unit not found");
       }
-      
+
     } catch (error) {
       console.error("Update error:", error);
-      showAlert({
-        type: "error",
-        title: "Error",
-        message: error.message || "Failed to update unit",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.error("Error", error.message || "Failed to update unit");
     } finally {
       setSaving(false);
     }
@@ -255,7 +239,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
 
   return (
     <div className={isModal ? "space-y-6" : "space-y-6 py-2 px-4"}>
-      <AlertComponent />
+      {/* No AlertComponent needed with global toast */}
 
       {/* Header - Hide in Modal */}
       {!isModal && (

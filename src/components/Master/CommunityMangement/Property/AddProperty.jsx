@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Upload, X } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
-import { useSweetAlert } from "../../../../ui/Common/SweetAlert";
+import { useToast } from "../../../../ui/common/CostumeTost";
 import Button from "../../../../ui/Common/Button";
 import Card, {
   CardHeader,
@@ -15,7 +15,7 @@ import { RiArrowGoBackFill } from "react-icons/ri";
 const AddProperty = ({ onClose, onSuccess }) => {
   const { theme, themeUtils } = useTheme();
   const navigate = useNavigate();
-  const { showAlert, AlertComponent } = useSweetAlert();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(false);
   const [communities, setCommunities] = useState([]);
@@ -93,15 +93,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
     if (!form.propertyName) missingFields.push("Property Name");
 
     if (missingFields.length > 0) {
-      showAlert({
-        type: "error",
-        title: "Validation Error",
-        message: `Please fill all required fields: ${missingFields.join(", ")}`,
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.error("Validation Error", `Please fill all required fields: ${missingFields.join(", ")}`);
       return;
     }
 
@@ -111,7 +103,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const existingProperties = JSON.parse(localStorage.getItem("properties") || "[]");
-      
+
       let imageUrl = null;
       if (imagePreview) {
         imageUrl = imagePreview;
@@ -133,37 +125,21 @@ const AddProperty = ({ onClose, onSuccess }) => {
         total_floors: 0,
         property_image: imageUrl
       };
-      
+
       existingProperties.push(newProperty);
       localStorage.setItem("properties", JSON.stringify(existingProperties));
 
-      showAlert({
-        type: "success",
-        title: "Success",
-        message: "Property added successfully!",
-        autoClose: true,
-        autoCloseTime: 2000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.success("Success", "Property added successfully!");
 
       setTimeout(() => {
         if (isModal && onClose) onClose();
         if (onSuccess) onSuccess(newProperty);
         if (!isModal) navigate("/community-management/Property", { replace: true });
       }, 2000);
-      
+
     } catch (err) {
       console.error("Add property error:", err);
-      showAlert({
-        type: "error",
-        title: "Error",
-        message: err.message || "Failed to add property",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.error("Error", err.message || "Failed to add property");
     } finally {
       setLoading(false);
     }
@@ -179,7 +155,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
 
   return (
     <div className={isModal ? "space-y-6" : "space-y-6 py-2 px-4"}>
-      <AlertComponent />
+      {/* No AlertComponent needed with global toast */}
 
       {!isModal && (
         <CardHeader>
@@ -209,7 +185,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
                 >
                   Property Image
                 </label>
-                
+
                 {/* Image Upload Area - Fixed height container */}
                 <div className="relative w-full" style={{ height: '220px' }}>
                   <input
@@ -220,7 +196,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
                     className="hidden"
                     disabled={loading}
                   />
-                  
+
                   {!imagePreview ? (
                     // Upload placeholder with fixed height
                     <div
@@ -232,17 +208,17 @@ const AddProperty = ({ onClose, onSuccess }) => {
                       }}
                     >
                       <div className="flex flex-col items-center gap-2">
-                        <Upload 
-                          className="w-10 h-10" 
+                        <Upload
+                          className="w-10 h-10"
                           style={{ color: themeUtils.getTextColor(false) }}
                         />
-                        <p 
+                        <p
                           className="text-sm font-medium"
                           style={{ color: themeUtils.getTextColor(false) }}
                         >
                           Click to upload
                         </p>
-                        <p 
+                        <p
                           className="text-xs"
                           style={{ color: themeUtils.getTextColor(false) }}
                         >
@@ -265,14 +241,14 @@ const AddProperty = ({ onClose, onSuccess }) => {
                       >
                         <X className="w-3 h-3 text-white" />
                       </button>
-                      
+
                       {/* Image preview - Now using object-cover to fill completely */}
                       <img
                         src={imagePreview}
                         alt="Property preview"
                         className="w-full h-full object-cover"
                       />
-                      
+
                       {/* Change image overlay */}
                       <div
                         onClick={() => !loading && document.getElementById('property-image-upload').click()}

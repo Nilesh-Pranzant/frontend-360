@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Plus, Download } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
-import { useSweetAlert } from "../../../../ui/Common/SweetAlert";
+import { useToast } from "../../../../ui/common/CostumeTost";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
 import SearchBar from "../../../../ui/Common/SearchBar";
 import RecordsPerPage from "../../../../ui/Common/RecordsPerPage";
 import Table from "../../../../ui/Common/Table";
@@ -20,7 +21,7 @@ import Pagination from "../../../../ui/Common/Pagination";
 
 const ListProperty = () => {
   const { theme, themeUtils } = useTheme();
-  const { showAlert, AlertComponent } = useSweetAlert();
+  const toast = useToast();
 
   // Ref to prevent double delete execution
   const deleteInProgress = useRef(false);
@@ -44,7 +45,7 @@ const ListProperty = () => {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      
+
       // Static dummy data for properties with location fields
       const dummyProperties = [
         {
@@ -294,15 +295,7 @@ const ListProperty = () => {
       setProperties(normalized);
     } catch (error) {
       console.error("Error loading properties:", error);
-      showAlert({
-        type: "error",
-        title: "Error",
-        message: "Failed to load properties.",
-        variant: "toast",
-        autoClose: true,
-        autoCloseTime: 2500,
-        showConfirm: false,
-      });
+      toast.error("Error", "Failed to load properties.");
     } finally {
       setLoading(false);
     }
@@ -322,9 +315,9 @@ const ListProperty = () => {
     perPage === "All" || perPage === Infinity || perPage <= 0
       ? filteredProperty
       : filteredProperty.slice(
-          (currentPage - 1) * perPage,
-          currentPage * perPage
-        );
+        (currentPage - 1) * perPage,
+        currentPage * perPage
+      );
 
   const totalPages =
     perPage === "All" || perPage === Infinity || perPage <= 0
@@ -350,48 +343,24 @@ const ListProperty = () => {
       console.log("Delete already in progress, skipping...");
       return;
     }
-    
+
     deleteInProgress.current = true;
 
-    showAlert({
-      type: "warning",
-      title: "Are you sure?",
+    confirmDialog({
       message: "Do you want to delete this Property?",
-      showConfirm: true,
-      confirmText: "Yes",
-      showCancel: true,
-      cancelText: "No",
-      variant: "modal",
-      onConfirm: async () => {
+      header: "Are you sure?",
+      icon: "pi pi-exclamation-triangle",
+      acceptClassName: "p-button-danger",
+      acceptLabel: "Yes",
+      rejectLabel: "No",
+      accept: async () => {
         try {
           // Simulate successful deletion
           setProperties((prev) => prev.filter((p) => p.id !== id));
-          
-          // Add a small delay to ensure modal closes before showing toast
-          setTimeout(() => {
-            showAlert({
-              type: "success",
-              title: "Deleted",
-              message: "Property deleted successfully",
-              autoClose: true,
-              autoCloseTime: 2500,
-              variant: "toast",
-              showConfirm: false,
-            });
-          }, 100);
+          toast.error("Deleted", "Property deleted successfully");
         } catch (err) {
           console.error("Delete Property Error:", err);
-          setTimeout(() => {
-            showAlert({
-              type: "error",
-              title: "Error",
-              message: "Something went wrong",
-              autoClose: true,
-              autoCloseTime: 2500,
-              variant: "toast",
-              showConfirm: false,
-            });
-          }, 100);
+          toast.error("Error", "Something went wrong");
         } finally {
           // Reset the flag after a delay
           setTimeout(() => {
@@ -399,12 +368,12 @@ const ListProperty = () => {
           }, 2000);
         }
       },
-      onCancel: () => {
+      reject: () => {
         deleteInProgress.current = false;
       },
-      onClose: () => {
+      onHide: () => {
         deleteInProgress.current = false;
-      },
+      }
     });
   };
 
@@ -440,15 +409,7 @@ const ListProperty = () => {
     link.download = `Properties_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
 
-    showAlert({
-      type: "success",
-      title: "Export Successful",
-      message: "Properties exported to CSV successfully!",
-      autoClose: true,
-      autoCloseTime: 2500,
-      variant: "toast",
-      showConfirm: false,
-    });
+    toast.success("Export Successful", "Properties exported to CSV successfully!");
   };
 
   const truncateText = (text) => {
@@ -543,52 +504,52 @@ const ListProperty = () => {
 
   return (
     <div className="space-y-4">
-      <AlertComponent />
+      <ConfirmDialog />
 
-     
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 py-2">
-          <div className="space-y-1">
-            <CardTitle themeUtils={themeUtils}>Property Management</CardTitle>
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 py-2">
+        <div className="space-y-1">
+          <CardTitle themeUtils={themeUtils}>Property Management</CardTitle>
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <RecordsPerPage
+              value={perPage}
+              onChange={setPerPage}
+              className="shrink-0"
+            />
+            <SearchBar
+              placeholder="Search Property"
+              value={search}
+              onChange={setSearch}
+              size="medium"
+              className="w-full md:min-w-64"
+            />
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-auto">
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <RecordsPerPage
-                value={perPage}
-                onChange={setPerPage}
-                className="shrink-0"
-              />
-              <SearchBar
-                placeholder="Search Property"
-                value={search}
-                onChange={setSearch}
-                size="medium"
-                className="w-full md:min-w-64"
-              />
-            </div>
+          <div className="flex flex-row items-center gap-3 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={handleAdd}
+              className="whitespace-nowrap shrink-0"
+            >
+              Add
+            </Button>
 
-            <div className="flex flex-row items-center gap-3 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
-              <Button
-                variant="primary"
-                icon={Plus}
-                onClick={handleAdd}
-                className="whitespace-nowrap shrink-0"
-              >
-                Add
-              </Button>
-
-              <Button
-                variant="success"
-                icon={Download}
-                onClick={exportCSV}
-                className="whitespace-nowrap shrink-0"
-              >
-                Export
-              </Button>
-            </div>
+            <Button
+              variant="success"
+              icon={Download}
+              onClick={exportCSV}
+              className="whitespace-nowrap shrink-0"
+            >
+              Export
+            </Button>
           </div>
         </div>
-      
+      </div>
+
 
       <CardContent>
         <div className="overflow-x-auto hide-scrollbar px-4 py-0">

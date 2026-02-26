@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { Upload, X } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
-import { useSweetAlert } from "../../../../ui/Common/SweetAlert";
+import { useToast } from "../../../../ui/common/CostumeTost";
 import Button from "../../../../ui/Common/Button";
 import { useNavigate } from "react-router-dom";
 
 const AddCommunity = ({ onClose, onSuccess }) => {
   const { themeUtils } = useTheme();
   const navigate = useNavigate();
-  const { showAlert, AlertComponent } = useSweetAlert();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -45,30 +45,18 @@ const AddCommunity = ({ onClose, onSuccess }) => {
       // Validate file type
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
       if (!validTypes.includes(selectedFile.type)) {
-        showAlert({
-          type: "error",
-          title: "Invalid File Type",
-          message: "Please select a valid image file (JPEG, PNG, or WEBP)",
-          autoClose: true,
-          autoCloseTime: 3000,
-        });
+        toast.error("Invalid File Type", "Please select a valid image file (JPEG, PNG, or WEBP)");
         return;
       }
 
       // Validate file size (5MB max)
       if (selectedFile.size > 5 * 1024 * 1024) {
-        showAlert({
-          type: "error",
-          title: "File Too Large",
-          message: "Image size should be less than 5MB",
-          autoClose: true,
-          autoCloseTime: 3000,
-        });
+        toast.error("File Too Large", "Image size should be less than 5MB");
         return;
       }
 
       setFile(selectedFile);
-      
+
       // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -265,40 +253,18 @@ const AddCommunity = ({ onClose, onSuccess }) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      showAlert({
-        type: "error",
-        title: "Validation Error",
-        message: "Please fix the errors in the form before submitting.",
-        autoClose: true,
-        autoCloseTime: 3000,
-      });
+      toast.error("Validation Error", "Please fix the errors in the form before submitting.");
       return;
     }
 
     setLoading(true);
-    
+
     // Simulate API call with a delay
     setTimeout(() => {
       setLoading(false);
-      
-      showAlert({
-        type: "success",
-        title: "Success",
-        message: "Community added successfully!",
-        autoClose: true,
-        autoCloseTime: 2200,
-        confirmButtonText: "OK",
-        onConfirm: () => {
-          if (onClose) onClose();
-          if (onSuccess) onSuccess();
-          navigate("/community-management/communities", { replace: true });
-        },
-        onClose: () => {
-          if (onClose) onClose();
-          if (onSuccess) onSuccess();
-          navigate("/community-management/communities", { replace: true });
-        },
-      });
+      toast.success("Community Created!", "Community added successfully.");
+      if (onClose) onClose();
+      if (onSuccess) onSuccess();
     }, 1000);
   };
 
@@ -307,11 +273,11 @@ const AddCommunity = ({ onClose, onSuccess }) => {
   };
 
   const isFormValid = () => {
-    return form.communityName.trim() !== "" && 
-           form.location.trim() !== "" && 
-           form.city.trim() !== "" && 
-           form.country.trim() !== "" && 
-           !hasErrors();
+    return form.communityName.trim() !== "" &&
+      form.location.trim() !== "" &&
+      form.city.trim() !== "" &&
+      form.country.trim() !== "" &&
+      !hasErrors();
   };
 
   return (
@@ -319,8 +285,6 @@ const AddCommunity = ({ onClose, onSuccess }) => {
       className="flex flex-col h-full rounded-lg"
       style={{ backgroundColor: themeUtils.getBgColor("default") }}
     >
-      <AlertComponent />
-
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto p-2">
@@ -340,7 +304,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
               >
                 Community Profile Picture
               </h3>
-              
+
               {/* Image Preview or Upload Area */}
               {previewUrl ? (
                 <div className="relative">
@@ -385,7 +349,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   </p>
                 </div>
               )}
-              
+
               <input
                 id="community-image"
                 type="file"
@@ -422,11 +386,10 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   onChange={(e) =>
                     handleInputChange("communityName", e.target.value)
                   }
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
-                    errors.communityName
+                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.communityName
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : ""
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     borderColor: errors.communityName
@@ -466,11 +429,10 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   onChange={(e) =>
                     handleInputChange("location", e.target.value)
                   }
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
-                    errors.location
+                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.location
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : ""
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     borderColor: errors.location
@@ -513,11 +475,10 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   onChange={(e) =>
                     handleInputChange("city", e.target.value)
                   }
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
-                    errors.city
+                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.city
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : ""
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     borderColor: errors.city
@@ -548,11 +509,10 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   onChange={(e) =>
                     handleInputChange("country", e.target.value)
                   }
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all ${
-                    errors.country
+                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all ${errors.country
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : ""
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     borderColor: errors.country
@@ -593,11 +553,10 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                     handleInputChange("totalProperties", e.target.value)
                   }
                   min="0"
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
-                    errors.totalProperties
+                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.totalProperties
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : ""
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     borderColor: errors.totalProperties
@@ -629,11 +588,10 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                     handleInputChange("totalUnits", e.target.value)
                   }
                   min="0"
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
-                    errors.totalUnits
+                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.totalUnits
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : ""
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     borderColor: errors.totalUnits
@@ -673,11 +631,10 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                 onChange={(e) =>
                   handleInputChange("description", e.target.value)
                 }
-                className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all resize-none placeholder:text-gray-400 ${
-                  errors.description
+                className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all resize-none placeholder:text-gray-400 ${errors.description
                     ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                     : ""
-                }`}
+                  }`}
                 style={{
                   backgroundColor: themeUtils.getBgColor("input"),
                   borderColor: errors.description
@@ -718,11 +675,10 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                     onChange={(e) =>
                       handleInputChange("managerName", e.target.value)
                     }
-                    className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
-                      errors.managerName
+                    className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.managerName
                         ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                         : ""
-                    }`}
+                      }`}
                     style={{
                       backgroundColor: themeUtils.getBgColor("input"),
                       borderColor: errors.managerName
@@ -768,11 +724,10 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                           .slice(0, 15);
                         handleInputChange("managerContact", val);
                       }}
-                      className={`flex-1 px-4 py-2.5 text-sm rounded-r-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
-                        errors.managerContact
+                      className={`flex-1 px-4 py-2.5 text-sm rounded-r-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.managerContact
                           ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                           : ""
-                      }`}
+                        }`}
                       style={{
                         backgroundColor: themeUtils.getBgColor("input"),
                         borderColor: errors.managerContact

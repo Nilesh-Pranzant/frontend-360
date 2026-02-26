@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Upload, X, Pencil } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
-import { useSweetAlert } from "../../../../ui/Common/SweetAlert";
+import { useToast } from "../../../../ui/common/CostumeTost";
 import Button from "../../../../ui/Common/Button";
 import Card, {
   CardHeader,
@@ -17,7 +17,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
-  const { showAlert, AlertComponent } = useSweetAlert();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,16 +71,8 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
       loadPropertyFromStorage(id);
     } else {
       console.error("No property data available");
-      showAlert({
-        type: "error",
-        title: "Error",
-        message: "No property data found. Please go back and try again.",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-        onClose: () => !isModal && navigate("/community-management/Property"),
-      });
+      toast.error("Error", "No property data found. Please go back and try again.");
+      if (!isModal) navigate("/community-management/Property");
       setLoading(false);
     }
   }, [id, propProperty, location.state]);
@@ -88,27 +80,19 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
   const loadPropertyFromStorage = (propertyId) => {
     try {
       setLoading(true);
-      
+
       // Get properties from localStorage
       const existingProperties = JSON.parse(localStorage.getItem("properties") || "[]");
-      
+
       // Find property by id
       const foundProperty = existingProperties.find(p => p.id === parseInt(propertyId) || p.id === propertyId);
-      
+
       if (foundProperty) {
         populateForm(foundProperty);
       } else {
         console.error("Property not found in localStorage");
-        showAlert({
-          type: "error",
-          title: "Error",
-          message: "Property not found",
-          autoClose: true,
-          autoCloseTime: 3000,
-          variant: "toast",
-          showConfirm: false,
-          onClose: () => !isModal && navigate("/community-management/Property"),
-        });
+        toast.error("Error", "Property not found");
+        if (!isModal) navigate("/community-management/Property");
       }
     } catch (error) {
       console.error("Error loading property from storage:", error);
@@ -176,29 +160,13 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
       id;
 
     if (!propertyId) {
-      showAlert({
-        type: "error",
-        title: "Error",
-        message: "Property ID is missing. Please go back and try again.",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.error("Error", "Property ID is missing. Please go back and try again.");
       return;
     }
 
     // Validate required fields (only Property Name is required)
     if (!form.propertyName.trim()) {
-      showAlert({
-        type: "error",
-        title: "Validation Error",
-        message: "Property Name is required.",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.error("Validation Error", "Property Name is required.");
       return;
     }
 
@@ -210,12 +178,12 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
 
       // Get existing properties from localStorage
       const existingProperties = JSON.parse(localStorage.getItem("properties") || "[]");
-      
+
       // Find the property to update
-      const propertyIndex = existingProperties.findIndex(p => 
+      const propertyIndex = existingProperties.findIndex(p =>
         p.id === parseInt(propertyId) || p.id === propertyId
       );
-      
+
       if (propertyIndex !== -1) {
         // Update existing property
         existingProperties[propertyIndex] = {
@@ -232,19 +200,11 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
           zip_code: form.zipCode || "",
           property_image: imagePreview || existingProperties[propertyIndex].property_image // Update image if changed
         };
-        
+
         // Save back to localStorage
         localStorage.setItem("properties", JSON.stringify(existingProperties));
 
-        showAlert({
-          type: "success",
-          title: "Success",
-          message: "Property updated successfully!",
-          autoClose: true,
-          autoCloseTime: 2000,
-          variant: "toast",
-          showConfirm: false,
-        });
+        toast.warn("Success", "Property updated successfully!");
 
         // Navigate after auto-close timeout
         setTimeout(() => {
@@ -257,15 +217,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error("Update error:", error);
-      showAlert({
-        type: "error",
-        title: "Error",
-        message: error.message || "Failed to update property",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.error("Error", error.message || "Failed to update property");
     } finally {
       setSaving(false);
     }
@@ -297,7 +249,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
 
   return (
     <div className={isModal ? "space-y-6" : "space-y-6 py-2 px-4"}>
-      <AlertComponent />
+      {/* No AlertComponent needed with global toast */}
 
       {!isModal && (
         <CardHeader>
@@ -333,7 +285,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                 >
                   Property Image
                 </label>
-                
+
                 {/* Image Upload Area - Fixed height container */}
                 <div className="relative w-full" style={{ height: '220px' }}>
                   <input
@@ -344,7 +296,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                     className="hidden"
                     disabled={saving}
                   />
-                  
+
                   {!imagePreview ? (
                     // No image - Blank space with pencil icon
                     <div
@@ -356,11 +308,11 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                       }}
                     >
                       <div className="flex flex-col items-center gap-2">
-                        <Pencil 
-                          className="w-8 h-8" 
+                        <Pencil
+                          className="w-8 h-8"
                           style={{ color: themeUtils.getTextColor(false) }}
                         />
-                        <p 
+                        <p
                           className="text-xs font-medium"
                           style={{ color: themeUtils.getTextColor(false) }}
                         >
@@ -381,7 +333,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                         alt="Property preview"
                         className="w-full h-full object-cover"
                       />
-                      
+
                       {/* Pencil overlay for editing */}
                       <div
                         onClick={() => !saving && document.getElementById('property-image-upload').click()}
@@ -392,7 +344,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                           <span className="text-white text-xs font-medium">Change Image</span>
                         </div>
                       </div>
-                      
+
                       {/* Remove button (X) */}
                       <button
                         onClick={handleImageRemove}

@@ -20,6 +20,7 @@ import Profile from "./ui/Profile/Profile";
 import Footer from "./ui/layout/Footer";
 import Setting from "./ui/Settings/Settings";
 import { API_URL } from "../config";
+import { ToastProvider } from "./ui/common/CostumeTost";
 import axios from "axios";
 
 import AdminRoutes from "./admin/routes/AdminRoutes";
@@ -249,7 +250,9 @@ function App() {
   return (
     <Router>
       <ThemeProvider>
-        <AppContent />
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
       </ThemeProvider>
     </Router>
   );

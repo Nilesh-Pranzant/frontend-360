@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
-import { useSweetAlert } from "../../../../ui/Common/SweetAlert";
+import { useToast } from "../../../../ui/common/CostumeTost";
 import Button from "../../../../ui/Common/Button";
 import Card, {
   CardHeader,
@@ -14,13 +14,13 @@ import { RiArrowGoBackFill } from "react-icons/ri";
 const AddUnit = ({ onClose, onSuccess }) => {
   const { themeUtils } = useTheme();
   const navigate = useNavigate();
-  const { showAlert, AlertComponent } = useSweetAlert();
+  const toast = useToast();
 
   // Check if modal mode
   const isModal = !!onClose;
 
   const [loading, setLoading] = useState(false);
-  
+
   // Static data for dropdowns
   const [communities, setCommunities] = useState([]);
   const [properties, setProperties] = useState([]);
@@ -122,47 +122,23 @@ const AddUnit = ({ onClose, onSuccess }) => {
   const handleSubmit = async () => {
     // Validation - only community, property, and unit number are mandatory
     if (!form.communityId) {
-      showAlert({
-        type: "error",
-        title: "Validation Error",
-        message: "Please select a community.",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.error("Validation Error", "Please select a community.");
       return;
     }
 
     if (!form.propertyId) {
-      showAlert({
-        type: "error",
-        title: "Validation Error",
-        message: "Please select a property.",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.error("Validation Error", "Please select a property.");
       return;
     }
 
     if (!form.unitNumber) {
-      showAlert({
-        type: "error",
-        title: "Validation Error",
-        message: "Please enter unit number.",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.error("Validation Error", "Please enter unit number.");
       return;
     }
 
     try {
       setLoading(true);
-      
+
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -193,15 +169,7 @@ const AddUnit = ({ onClose, onSuccess }) => {
       localStorage.setItem("units", JSON.stringify(existingUnits));
 
       // Show success alert
-      showAlert({
-        type: "success",
-        title: "Success",
-        message: "Unit added successfully!",
-        autoClose: true,
-        autoCloseTime: 2000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.success("Success", "Unit added successfully!");
 
       // Call success callback and close
       setTimeout(() => {
@@ -209,18 +177,10 @@ const AddUnit = ({ onClose, onSuccess }) => {
         if (isModal && onClose) onClose();
         if (!isModal) navigate("/community-management/units", { replace: true });
       }, 2000);
-      
+
     } catch (error) {
       console.error(error);
-      showAlert({
-        type: "error",
-        title: "Error",
-        message: error.message || "Something went wrong",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false,
-      });
+      toast.error("Error", error.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -236,7 +196,7 @@ const AddUnit = ({ onClose, onSuccess }) => {
 
   return (
     <div className={isModal ? "space-y-6" : "space-y-6 py-2 px-4"}>
-      <AlertComponent />
+      {/* No AlertComponent needed with global toast */}
 
       {/* Header - Hide in Modal */}
       {!isModal && (

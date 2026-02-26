@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Plus, Download } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
-import { useSweetAlert } from "../../../../ui/Common/SweetAlert";
+import { useToast } from "../../../../ui/common/CostumeTost";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
 import SearchBar from "../../../../ui/Common/SearchBar";
 import RecordsPerPage from "../../../../ui/Common/RecordsPerPage";
 import Table from "../../../../ui/Common/Table";
@@ -22,7 +23,7 @@ import ViewUnit from "./ViewUnit";
 
 const UnitList = () => {
   const { theme, themeUtils } = useTheme();
-  const { showAlert, AlertComponent } = useSweetAlert();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -40,16 +41,19 @@ const UnitList = () => {
   // Deduplication for toasts (prevents double messages)
   const lastShownToast = useRef({ message: "", timestamp: 0 });
 
-  const showSingleToast = (config) => {
+  // Status change in progress flag
+  const statusInProgress = useRef(false);
+
+  const showSingleToast = (severity, summary, detail) => {
     const now = Date.now();
-    const messageKey = `${config.type || ""}-${config.title || ""}-${config.message || ""}`;
+    const messageKey = `${severity}-${summary}-${detail}`;
 
     if (messageKey === lastShownToast.current.message && now - lastShownToast.current.timestamp < 1500) {
       return; // skip duplicate
     }
 
     lastShownToast.current = { message: messageKey, timestamp: now };
-    showAlert(config);
+    toast.show(severity, summary, detail);
   };
 
   /* ================= FETCH UNITS ================= */
@@ -60,7 +64,7 @@ const UnitList = () => {
   const fetchUnits = async () => {
     try {
       setLoading(true);
-      
+
       // Static dummy data with status as "sold" or "unsold"
       const dummyData = [
         {
@@ -279,15 +283,7 @@ const UnitList = () => {
       setCurrentPage(1);
     } catch (error) {
       console.error("Error loading units:", error);
-      showAlert({
-        type: "error",
-        title: "Error",
-        message: "Failed to load units.",
-        autoClose: true,
-        autoCloseTime: 3000,
-        variant: "toast",
-        showConfirm: false
-      });
+      showSingleToast("error", "Error", "Failed to load units.");
     } finally {
       setLoading(false);
     }
@@ -324,9 +320,9 @@ const UnitList = () => {
     perPage === "All" || perPage === Infinity || perPage <= 0
       ? filteredUnits
       : filteredUnits.slice(
-          (currentPage - 1) * perPage,
-          currentPage * perPage
-        );
+        (currentPage - 1) * perPage,
+        currentPage * perPage
+      );
 
   const totalPages =
     perPage === "All" || perPage === Infinity || perPage <= 0
@@ -346,41 +342,47 @@ const UnitList = () => {
     setIsEditDrawerOpen(true);
   };
 
-  const handleDelete = (id) => {
-    showAlert({
-      type: "warning",
-      title: "Are you sure?",
-      message: "Do you want to deactivate this Unit?",
-      showConfirm: true,
-      confirmText: "Yes",
-      showCancel: true,
-      cancelText: "No",
-      variant: "modal",
-      onConfirm: async () => {
+  const handleDelete = (unit) => {
+    const { id, is_active: isActive } = unit;
+
+    if (statusInProgress.current) return;
+    statusInProgress.current = true;
+    confirmDialog({
+      message: `Do you want to ${isActive ? "deactivate" : "activate"} this unit?`,
+      header: "Are you sure?",
+      icon: "pi pi-exclamation-triangle",
+      acceptClassName: isActive ? "p-button-danger" : "p-button-success",
+      acceptLabel: "Yes",
+      rejectLabel: "No",
+      accept: async () => {
         try {
-          // Update local state to remove the deleted unit
-          setUnits(prevUnits => prevUnits.filter(unit => unit.id !== id));
-          
-          showSingleToast({
-            type: "success",
-            title: "Deleted",
-            message: "Unit deactivated successfully",
-            autoClose: true,
-            autoCloseTime: 2500,
-            variant: "toast",
-          });
+          const updatedUnits = units.map((u) =>
+            u.id === id ? { ...u, is_active: !isActive } : u
+          );
+          setUnits(updatedUnits);
+          // Assuming localStorage is used for persistence, if not, this line can be removed or replaced with an API call
+          localStorage.setItem("units", JSON.stringify(updatedUnits));
+
+          if (isActive) {
+            toast.error("Success", "Unit deactivated successfully!");
+          } else {
+            toast.success("Success", "Unit activated successfully!");
+          }
         } catch (err) {
-          console.error("Delete Unit Error:", err);
-          showAlert({
-            type: "error",
-            title: "Error",
-            message: "Something went wrong",
-            autoClose: true,
-            autoCloseTime: 3000,
-            variant: "toast",
-          });
+          console.error("Status Change Error:", err);
+          toast.error("Error", "Something went wrong while changing status");
+        } finally {
+          setTimeout(() => {
+            statusInProgress.current = false;
+          }, 1000);
         }
       },
+      reject: () => {
+        statusInProgress.current = false;
+      },
+      onHide: () => {
+        statusInProgress.current = false;
+      }
     });
   };
 
@@ -418,15 +420,10 @@ const UnitList = () => {
     link.download = `Units_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
 
-    showSingleToast({
-      type: "success",
-      title: "Export Successful",
-      message: "Units exported to CSV successfully!",
-      autoClose: true,
-      autoCloseTime: 2500,
-      variant: "toast",
-    });
+    toast.success("Export Successful", "Units exported to CSV successfully!");
   };
+
+  // No additional duplicate needed
 
   /* ================= TABLE CONFIG ================= */
   const tableHeaders = [
@@ -500,7 +497,7 @@ const UnitList = () => {
           <ThreeDotsMenu
             onView={() => handleView(unit)}
             onEdit={() => handleEdit(unit)}
-            onDelete={() => handleDelete(unit.id)}
+            onDelete={() => handleDelete(unit)}
             viewTitle="View Unit"
             editTitle="Edit Unit"
             deleteTitle="Deactivate Unit"
@@ -513,7 +510,7 @@ const UnitList = () => {
 
   return (
     <div className="space-y-4">
-      <AlertComponent />
+      <ConfirmDialog />
 
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 py-2">
