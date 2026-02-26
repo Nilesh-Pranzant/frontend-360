@@ -4,6 +4,7 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+<<<<<<< HEAD
 
 pnpm-debug.log*
 lerna-debug.log*
@@ -24,6 +25,8 @@ dist-ssr
 *.sln
 *.sw?
 =======
+=======
+>>>>>>> 5eaaddf0c859ef84c3bbd9f1ed7cd14c2143e7b1
 lerna-debug.log*
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
