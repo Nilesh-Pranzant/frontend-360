@@ -34,7 +34,26 @@ const ListCommunity = () => {
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState(null);
   
-  // Static data for communities
+  // Static building images from free CDN sources
+  const buildingImages = [
+    "https://images.unsplash.com/photo-1545324418-cc1d3fa86c52?w=150&h=150&fit=crop", // Modern apartment
+    "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=150&h=150&fit=crop", // House
+    "https://images.unsplash.com/photo-1577495508048-b635879837f1?w=150&h=150&fit=crop", // Skyscraper
+    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150&h=150&fit=crop", // Office building
+    "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=150&h=150&fit=crop", // Apartment complex
+    "https://images.unsplash.com/photo-1460317442991-0ec209397118?w=150&h=150&fit=crop", // Modern building
+    "https://images.unsplash.com/photo-1558882224-dda1667339bb?w=150&h=150&fit=crop", // Luxury apartment
+    "https://images.unsplash.com/photo-1580041065738-e72023775cdc?w=150&h=150&fit=crop", // Residential building
+    "https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?w=150&h=150&fit=crop", // High rise
+    "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=150&h=150&fit=crop", // Modern architecture
+    "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?w=150&h=150&fit=crop", // Building facade
+    "https://images.unsplash.com/photo-1556911261-6bd341186b2f?w=150&h=150&fit=crop", // City building
+    "https://images.unsplash.com/photo-1556911220-bde9b7cb8b0d?w=150&h=150&fit=crop", // Apartment building
+    "https://images.unsplash.com/photo-1556912167-f556f1f39fdf?w=150&h=150&fit=crop", // Residential complex
+    "https://images.unsplash.com/photo-1556911073-5256ac39620c?w=150&h=150&fit=crop", // Modern apartment
+  ];
+
+  // Static data for communities with building images
   const [communities, setCommunities] = useState([
     {
       community_id: 1,
@@ -46,7 +65,7 @@ const ListCommunity = () => {
       manager_contact: "+971501234567",
       total_properties: 25,
       total_units: 120,
-      profile_picture: null,
+      profile_picture: buildingImages[1],
     },
     {
       community_id: 2,
@@ -58,7 +77,7 @@ const ListCommunity = () => {
       manager_contact: "+971551234567",
       total_properties: 18,
       total_units: 95,
-      profile_picture: null,
+      profile_picture: buildingImages[1],
     },
     {
       community_id: 3,
@@ -70,7 +89,7 @@ const ListCommunity = () => {
       manager_contact: "+971561234567",
       total_properties: 32,
       total_units: 210,
-      profile_picture: null,
+      profile_picture: buildingImages[2],
     },
     {
       community_id: 4,
@@ -82,7 +101,7 @@ const ListCommunity = () => {
       manager_contact: "+971502345678",
       total_properties: 45,
       total_units: 340,
-      profile_picture: null,
+      profile_picture: buildingImages[3],
     },
     {
       community_id: 5,
@@ -94,7 +113,7 @@ const ListCommunity = () => {
       manager_contact: "+971521234567",
       total_properties: 22,
       total_units: 180,
-      profile_picture: null,
+      profile_picture: buildingImages[4],
     },
     {
       community_id: 6,
@@ -106,7 +125,7 @@ const ListCommunity = () => {
       manager_contact: "+97165123456",
       total_properties: 15,
       total_units: 88,
-      profile_picture: null,
+      profile_picture: buildingImages[5],
     },
     {
       community_id: 7,
@@ -118,7 +137,7 @@ const ListCommunity = () => {
       manager_contact: "+971561239876",
       total_properties: 20,
       total_units: 105,
-      profile_picture: null,
+      profile_picture: buildingImages[5],
     },
     {
       community_id: 8,
@@ -130,7 +149,7 @@ const ListCommunity = () => {
       manager_contact: "+971501238765",
       total_properties: 38,
       total_units: 275,
-      profile_picture: null,
+      profile_picture: buildingImages[5],
     },
     {
       community_id: 9,
@@ -142,7 +161,7 @@ const ListCommunity = () => {
       manager_contact: "+971551238765",
       total_properties: 12,
       total_units: 60,
-      profile_picture: null,
+      profile_picture: buildingImages[8],
     },
     {
       community_id: 10,
@@ -154,7 +173,7 @@ const ListCommunity = () => {
       manager_contact: "+971561239874",
       total_properties: 9,
       total_units: 45,
-      profile_picture: null,
+      profile_picture: buildingImages[9],
     },
     {
       community_id: 11,
@@ -166,7 +185,7 @@ const ListCommunity = () => {
       manager_contact: "971501234567",
       total_properties: 14,
       total_units: 72,
-      profile_picture: null,
+      profile_picture: buildingImages[10],
     },
     {
       community_id: 12,
@@ -178,7 +197,7 @@ const ListCommunity = () => {
       manager_contact: "+971561239871",
       total_properties: 16,
       total_units: 84,
-      profile_picture: null,
+      profile_picture: buildingImages[11],
     },
     {
       community_id: 13,
@@ -190,7 +209,7 @@ const ListCommunity = () => {
       manager_contact: "+971551239871",
       total_properties: 27,
       total_units: 135,
-      profile_picture: null,
+      profile_picture: buildingImages[12],
     },
     {
       community_id: 14,
@@ -202,7 +221,7 @@ const ListCommunity = () => {
       manager_contact: "+971501239872",
       total_properties: 11,
       total_units: 55,
-      profile_picture: null,
+      profile_picture: buildingImages[13],
     },
     {
       community_id: 15,
@@ -214,7 +233,7 @@ const ListCommunity = () => {
       manager_contact: "+971561239873",
       total_properties: 7,
       total_units: 28,
-      profile_picture: null,
+      profile_picture: buildingImages[14],
     },
   ]);
 
@@ -319,7 +338,6 @@ const ListCommunity = () => {
   const exportCSV = () => {
     const headers = [
       "Sr. No",
-      "Profile Picture",
       "Community Name",
       "Location",
       "City",
@@ -335,7 +353,6 @@ const ListCommunity = () => {
       ...filteredCommunities.map((c, i) =>
         [
           i + 1,
-          `"${c.profile_picture?.replace(/"/g, '""') || ""}"`,
           `"${c.community_name?.replace(/"/g, '""') || ""}"`,
           `"${c.location?.replace(/"/g, '""') || ""}"`,
           `"${c.city?.replace(/"/g, '""') || ""}"`,
@@ -429,14 +446,21 @@ const ListCommunity = () => {
         className="px-3 py-1.5 text-sm text-center"
         style={{ color: themeUtils.getTextColor(true) }}
       >
-        <img
-          src={community.profile_picture || "https://via.placeholder.com/40"}
-          alt={community.community_name || "Community"}
-          className="w-8 h-8 rounded-full object-cover mx-auto"
-          onError={(e) => {
-            e.target.src = "https://via.placeholder.com/40";
-          }}
-        />
+        <div className="flex justify-center">
+          <img
+            src={community.profile_picture}
+            alt={community.community_name || "Community"}
+            className="w-10 h-10 rounded-full object-cover border-2"
+            style={{ 
+              borderColor: theme.headerBg || "#6366f1",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+            }}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(community.community_name)}&background=6366f1&color=fff&size=40&bold=true`;
+            }}
+          />
+        </div>
       </td>
       <td
         className="px-3 py-1.5 text-sm text-left truncate max-w-[200px]"
