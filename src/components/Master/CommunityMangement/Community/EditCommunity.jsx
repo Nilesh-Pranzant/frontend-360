@@ -3,11 +3,10 @@ import { Upload, X } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
 import { useToast } from "../../../../ui/common/CostumeTost";
 import Button from "../../../../ui/Common/Button";
-import { useNavigate } from "react-router-dom";
+import { API_URL_COMMUNITY } from "../../../../../config";
 
 const EditCommunity = ({ communityId, onClose, onSuccess }) => {
   const { themeUtils } = useTheme();
-  const navigate = useNavigate();
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
@@ -15,28 +14,32 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [existingImage, setExistingImage] = useState(null);
   const [form, setForm] = useState({
-    communityName: "",
+    community_code: "",
+    community_name: "",
     location: "",
     city: "",
     country: "UAE",
-    managerName: "",
-    managerContact: "",
-    totalProperties: "",
-    totalUnits: "",
+    manager_name: "",
+    manager_contact: "",
+    total_properties: "",
+    total_units: "",
     description: "",
   });
-  const [countryCode, setCountryCode] = useState("+971");
+
+  // Base URL for API
+  const baseURL = API_URL_COMMUNITY || "http://192.168.1.39:5000";
 
   // Validation errors state
   const [errors, setErrors] = useState({
-    communityName: "",
+    community_code: "",
+    community_name: "",
     location: "",
     city: "",
     country: "",
-    managerName: "",
-    managerContact: "",
-    totalProperties: "",
-    totalUnits: "",
+    manager_name: "",
+    manager_contact: "",
+    total_properties: "",
+    total_units: "",
     description: "",
   });
 
@@ -47,7 +50,7 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
       // Validate file type
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
       if (!validTypes.includes(selectedFile.type)) {
-        toast.error("Invalid File Type", "Please upload a valid image file (JPG, PNG, GIF).");
+        toast.error("Invalid File Type", "Please upload a valid image file (JPG, PNG, WEBP).");
         return;
       }
 
@@ -80,124 +83,53 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
     }
   };
 
-  // Fetch community details - Static version
+  // Fetch community details from API
   useEffect(() => {
     const fetchCommunity = async () => {
       try {
         setFetchLoading(true);
+        
+        const response = await fetch(`${baseURL}/api/communities/${communityId}`);
+        const data = await response.json();
 
-        // Mock data for static demo
-        setTimeout(() => {
-          // Mock community data based on ID
-          const mockCommunities = {
-            1: {
-              community_name: "Al Nahda",
-              location: "Near Sahara Mall",
-              city: "Dubai",
-              country: "UAE",
-              manager_name: "Ahmed Al Mansouri",
-              manager_contact: "+971501234567",
-              total_properties: 25,
-              total_units: 120,
-              community_description: "A vibrant community with excellent amenities",
-              image: "https://images.unsplash.com/photo-1545324418-cc1d3fa86c58?w=300&h=300&fit=crop",
-            },
-            2: {
-              community_name: "Al Furjan",
-              location: "Near Ibn Battuta",
-              city: "Dubai",
-              country: "UAE",
-              manager_name: "Fatima Al Hashemi",
-              manager_contact: "+971551234567",
-              total_properties: 18,
-              total_units: 95,
-              community_description: "Modern residential community",
-              image: "https://images.unsplash.com/photo-1582268611958-ebfd161ef703?w=300&h=300&fit=crop",
-            },
-            3: {
-              community_name: "Khalifa City A",
-              location: "Near Abu Dhabi International Airport",
-              city: "Abu Dhabi",
-              country: "UAE",
-              manager_name: "Khalid Al Nuaimi",
-              manager_contact: "+971561234567",
-              total_properties: 32,
-              total_units: 210,
-              community_description: "Family-oriented community",
-              image: "https://images.unsplash.com/photo-1600607686527-6fb886090705?w=300&h=300&fit=crop",
-            },
-            4: {
-              community_name: "Al Reem Island",
-              location: "Shams Abu Dhabi",
-              city: "Abu Dhabi",
-              country: "UAE",
-              manager_name: "Mariam Al Zaabi",
-              manager_contact: "+971502345678",
-              total_properties: 45,
-              total_units: 340,
-              community_description: "Waterfront living",
-              image: "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=300&h=300&fit=crop",
-            },
-            5: {
-              community_name: "The Greens",
-              location: "Barsha Heights",
-              city: "Dubai",
-              country: "UAE",
-              manager_name: "Omar Al Qubaisi",
-              manager_contact: "+971521234567",
-              total_properties: 22,
-              total_units: 180,
-              community_description: "Green community with parks",
-              image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=300&h=300&fit=crop",
-            }
-          };
-
-          const community = mockCommunities[communityId] || {
-            community_name: "Sample Community",
-            location: "Sample Location",
-            city: "Dubai",
-            country: "UAE",
-            manager_name: "John Doe",
-            manager_contact: "+971501234567",
-            total_properties: 25,
-            total_units: 120,
-            community_description: "Sample community description",
-            image: null,
-          };
-
-          // Extract contact number without country code
+        if (response.ok) {
+          // Extract contact number without country code if it has +971
           let contactNumber = "";
-          if (community.manager_contact) {
-            if (community.manager_contact.startsWith("+971")) {
-              contactNumber = community.manager_contact.substring(4);
+          if (data.manager_contact) {
+            const contactStr = data.manager_contact.toString();
+            if (contactStr.startsWith("+971")) {
+              contactNumber = contactStr.substring(4);
+            } else if (contactStr.startsWith("971")) {
+              contactNumber = contactStr.substring(3);
             } else {
-              contactNumber = community.manager_contact;
+              contactNumber = contactStr;
             }
           }
 
           setForm({
-            communityName: community.community_name || "",
-            location: community.location || "",
-            city: community.city || "",
-            country: community.country || "UAE",
-            managerName: community.manager_name || "",
-            managerContact: contactNumber,
-            totalProperties: community.total_properties || "",
-            totalUnits: community.total_units || "",
-            description: community.community_description || "",
+            community_code: data.community_code || "",
+            community_name: data.community_name || "",
+            location: data.location || "",
+            city: data.city || "",
+            country: data.country || "UAE",
+            manager_name: data.manager_name || "",
+            manager_contact: contactNumber,
+            total_properties: data.total_properties || "",
+            total_units: data.total_units || "",
+            description: data.description || "",
           });
 
           // Set existing image if available
-          if (community.image) {
-            setExistingImage(community.image);
+          if (data.profile_image) {
+            setExistingImage(`${baseURL}${data.profile_image}`);
           }
-
-          setFetchLoading(false);
-        }, 500);
-
+        } else {
+          throw new Error(data.message || "Failed to load community details");
+        }
       } catch (error) {
         console.error("Fetch community error:", error);
         toast.error("Error", error.message || "Failed to load community details");
+      } finally {
         setFetchLoading(false);
       }
     };
@@ -205,32 +137,45 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
     if (communityId) {
       fetchCommunity();
     }
-  }, [communityId]);
+  }, [communityId, baseURL]);
 
   // Validation rules
   const validateForm = () => {
     const newErrors = {
-      communityName: "",
+      community_code: "",
+      community_name: "",
       location: "",
       city: "",
       country: "",
-      managerName: "",
-      managerContact: "",
-      totalProperties: "",
-      totalUnits: "",
+      manager_name: "",
+      manager_contact: "",
+      total_properties: "",
+      total_units: "",
       description: "",
     };
     let isValid = true;
 
+    // Community Code validation
+    if (!form.community_code.trim()) {
+      newErrors.community_code = "Community code is required";
+      isValid = false;
+    } else if (form.community_code.length < 3) {
+      newErrors.community_code = "Community code must be at least 3 characters";
+      isValid = false;
+    } else if (form.community_code.length > 50) {
+      newErrors.community_code = "Community code cannot exceed 50 characters";
+      isValid = false;
+    }
+
     // Community Name validation
-    if (!form.communityName.trim()) {
-      newErrors.communityName = "Community name is required";
+    if (!form.community_name.trim()) {
+      newErrors.community_name = "Community name is required";
       isValid = false;
-    } else if (form.communityName.length < 3) {
-      newErrors.communityName = "Community name must be at least 3 characters";
+    } else if (form.community_name.length < 3) {
+      newErrors.community_name = "Community name must be at least 3 characters";
       isValid = false;
-    } else if (form.communityName.length > 100) {
-      newErrors.communityName = "Community name cannot exceed 100 characters";
+    } else if (form.community_name.length > 150) {
+      newErrors.community_name = "Community name cannot exceed 150 characters";
       isValid = false;
     }
 
@@ -259,37 +204,37 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
     }
 
     // Manager name validation - only letters and spaces
-    if (form.managerName) {
+    if (form.manager_name) {
       const nameRegex = /^[A-Za-z\s]+$/;
-      if (!nameRegex.test(form.managerName.trim())) {
-        newErrors.managerName =
+      if (!nameRegex.test(form.manager_name.trim())) {
+        newErrors.manager_name =
           "Manager name can only contain letters and spaces";
         isValid = false;
-      } else if (form.managerName.trim().length > 50) {
-        newErrors.managerName = "Manager name cannot exceed 50 characters";
+      } else if (form.manager_name.trim().length > 100) {
+        newErrors.manager_name = "Manager name cannot exceed 100 characters";
         isValid = false;
       }
     }
 
     // Manager Contact validation
-    if (form.managerContact) {
+    if (form.manager_contact) {
       const phoneRegex = /^[0-9]{7,15}$/;
-      if (!phoneRegex.test(form.managerContact)) {
-        newErrors.managerContact =
+      if (!phoneRegex.test(form.manager_contact)) {
+        newErrors.manager_contact =
           "Please enter a valid phone number (0-9 digits)";
         isValid = false;
       }
     }
 
     // Total Properties validation
-    if (form.totalProperties && parseInt(form.totalProperties) < 0) {
-      newErrors.totalProperties = "Total properties cannot be negative";
+    if (form.total_properties && parseInt(form.total_properties) < 0) {
+      newErrors.total_properties = "Total properties cannot be negative";
       isValid = false;
     }
 
     // Total Units validation
-    if (form.totalUnits && parseInt(form.totalUnits) < 0) {
-      newErrors.totalUnits = "Total units cannot be negative";
+    if (form.total_units && parseInt(form.total_units) < 0) {
+      newErrors.total_units = "Total units cannot be negative";
       isValid = false;
     }
 
@@ -306,12 +251,16 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
   // Real-time validation for specific fields
   const validateField = (name, value) => {
     switch (name) {
-      case "communityName":
+      case "community_code":
+        if (!value.trim()) return "Community code is required";
+        if (value.length < 3) return "Community code must be at least 3 characters";
+        if (value.length > 50) return "Community code cannot exceed 50 characters";
+        return "";
+
+      case "community_name":
         if (!value.trim()) return "Community name is required";
-        if (value.length < 3)
-          return "Community name must be at least 3 characters";
-        if (value.length > 100)
-          return "Community name cannot exceed 100 characters";
+        if (value.length < 3) return "Community name must be at least 3 characters";
+        if (value.length > 150) return "Community name cannot exceed 150 characters";
         return "";
 
       case "location":
@@ -328,20 +277,20 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
         if (!value.trim()) return "Country is required";
         return "";
 
-      case "managerName":
+      case "manager_name":
         if (value) {
           const trimmed = value.trim();
           const nameRegex = /^[A-Za-z\s]+$/;
           if (!nameRegex.test(trimmed)) {
             return "Manager name can only contain letters and spaces";
           }
-          if (trimmed.length > 50) {
-            return "Manager name cannot exceed 50 characters";
+          if (trimmed.length > 100) {
+            return "Manager name cannot exceed 100 characters";
           }
         }
         return "";
 
-      case "managerContact":
+      case "manager_contact":
         if (value) {
           const phoneRegex = /^[0-9]{7,15}$/;
           if (!phoneRegex.test(value))
@@ -349,12 +298,12 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
         }
         return "";
 
-      case "totalProperties":
+      case "total_properties":
         if (value && parseInt(value) < 0)
           return "Total properties cannot be negative";
         return "";
 
-      case "totalUnits":
+      case "total_units":
         if (value && parseInt(value) < 0)
           return "Total units cannot be negative";
         return "";
@@ -394,52 +343,48 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
 
       // Create FormData for API call
       const formData = new FormData();
-      formData.append("community_name", form.communityName.trim());
+      formData.append("community_code", form.community_code.trim());
+      formData.append("community_name", form.community_name.trim());
       formData.append("location", form.location.trim());
       formData.append("city", form.city.trim());
       formData.append("country", form.country.trim());
-      formData.append("manager_name", form.managerName.trim());
-      formData.append(
-        "manager_contact",
-        form.managerContact ? `${countryCode}${form.managerContact}` : "",
-      );
-      formData.append("total_properties", form.totalProperties || "0");
-      formData.append("total_units", form.totalUnits || "0");
-      formData.append("community_description", form.description.trim());
+      formData.append("manager_name", form.manager_name.trim() || "");
+      
+      // Format phone number with +971 if it doesn't have it
+      let phoneNumber = form.manager_contact.trim();
+      if (phoneNumber && !phoneNumber.startsWith('+')) {
+        phoneNumber = phoneNumber.startsWith('971') ? `+${phoneNumber}` : `+971${phoneNumber}`;
+      }
+      formData.append("manager_contact", phoneNumber || "");
+      
+      formData.append("total_properties", form.total_properties || "0");
+      formData.append("total_units", form.total_units || "0");
+      formData.append("description", form.description.trim() || "");
 
       // Append new image if selected
       if (file) {
-        formData.append("image", file);
+        formData.append("profile_image", file);
       }
 
-      // Simulate API call
-      setTimeout(() => {
-        console.log("📤 Edit Community Payload:", {
-          community_name: form.communityName.trim(),
-          location: form.location.trim(),
-          city: form.city.trim(),
-          country: form.country.trim(),
-          manager_name: form.managerName.trim(),
-          manager_contact: form.managerContact ? `${countryCode}${form.managerContact}` : "",
-          total_properties: form.totalProperties || "0",
-          total_units: form.totalUnits || "0",
-          community_description: form.description.trim(),
-          image: file ? file.name : "No new image",
-        });
+      // Make API call
+      const response = await fetch(`${baseURL}/api/communities/${communityId}`, {
+        method: 'PUT',
+        body: formData,
+      });
 
-        toast.warn("Success", "Community updated successfully!");
+      const data = await response.json();
 
-        // Simulation delay for user to read toast before navigation
-        setTimeout(() => {
-          setLoading(false);
-          if (onClose) onClose();
-          if (onSuccess) onSuccess();
-          navigate("/community-management/communities", { replace: true });
-        }, 1000);
-      }, 1000);
+      if (response.ok) {
+        toast.success("Success!", "Community updated successfully!");
+        if (onSuccess) onSuccess(data);
+        if (onClose) onClose();
+      } else {
+        throw new Error(data.message || "Failed to update community");
+      }
     } catch (error) {
-      console.error("❌ Edit Community Error:", error);
+      console.error("Edit Community Error:", error);
       toast.error("Error", error.message || "Failed to update community");
+    } finally {
       setLoading(false);
     }
   };
@@ -449,7 +394,8 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
   };
 
   const isFormValid = () => {
-    return form.communityName.trim() !== "" &&
+    return form.community_code.trim() !== "" &&
+      form.community_name.trim() !== "" &&
       form.location.trim() !== "" &&
       form.city.trim() !== "" &&
       form.country.trim() !== "" &&
@@ -459,8 +405,6 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
   const handleCancel = () => {
     if (onClose) {
       onClose();
-    } else {
-      navigate("/community-management/communities");
     }
   };
 
@@ -488,17 +432,13 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
       className="flex flex-col h-full rounded-lg"
       style={{ backgroundColor: themeUtils.getBgColor("default") }}
     >
-      {/* No AlertComponent needed with global toast */}
-
-
-
       {/* Scrollable Content Area */}
-      <div className="flex-1  p-2">
+      <div className="flex-1 p-2">
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-1">
           {/* Left Column: Image Upload */}
-          <div className="lg:col-span-1 flex items-center lg:mb-45 justify-center ">
+          <div className="lg:col-span-1 flex items-center lg:mb-45 justify-center">
             <div
-              className="p-5 rounded-lg border "
+              className="p-5 rounded-lg border"
               style={{
                 backgroundColor: themeUtils.getBgColor("input"),
                 borderColor: themeUtils.getBorderColor(),
@@ -516,7 +456,7 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                 <div className="relative">
                   <img
                     src={previewUrl || existingImage}
-                    alt=""
+                    alt="Community"
                     className="w-full h-48 object-cover rounded-lg"
                   />
                   <button
@@ -563,15 +503,56 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                 onChange={handleFileChange}
                 className="hidden"
               />
-
-
             </div>
           </div>
 
           {/* Right Column: Form Fields */}
           <div className="lg:col-span-2 space-y-5">
-            {/* Row 1: Community Name and Location */}
+            {/* Row 1: Community Code and Community Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Community Code */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label
+                    className="block text-sm font-medium"
+                    style={{ color: themeUtils.getTextColor(false) }}
+                  >
+                    Community Code *
+                  </label>
+                  <span
+                    className="text-xs"
+                    style={{ color: themeUtils.getTextColor(false, true) }}
+                  >
+                    {form.community_code.length}/50
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={form.community_code}
+                  onChange={(e) =>
+                    handleInputChange("community_code", e.target.value.toUpperCase())
+                  }
+                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.community_code
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
+                    }`}
+                  style={{
+                    backgroundColor: themeUtils.getBgColor("input"),
+                    borderColor: errors.community_code
+                      ? "#ef4444"
+                      : themeUtils.getBorderColor(),
+                    color: themeUtils.getTextColor(true),
+                  }}
+                  placeholder="e.g. COM001"
+                  maxLength={50}
+                />
+                {errors.community_code && (
+                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                    <span>⚠</span> {errors.community_code}
+                  </p>
+                )}
+              </div>
+
               {/* Community Name */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
@@ -585,37 +566,39 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                     className="text-xs"
                     style={{ color: themeUtils.getTextColor(false, true) }}
                   >
-                    {form.communityName.length}/100
+                    {form.community_name.length}/150
                   </span>
                 </div>
                 <input
                   type="text"
-                  value={form.communityName}
+                  value={form.community_name}
                   onChange={(e) =>
-                    handleInputChange("communityName", e.target.value)
+                    handleInputChange("community_name", e.target.value)
                   }
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.communityName
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : ""
+                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.community_name
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
                     }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
-                    borderColor: errors.communityName
+                    borderColor: errors.community_name
                       ? "#ef4444"
                       : themeUtils.getBorderColor(),
                     color: themeUtils.getTextColor(true),
                   }}
                   placeholder="e.g. Palm Jumeirah"
-                  maxLength={100}
+                  maxLength={150}
                 />
-                {errors.communityName && (
+                {errors.community_name && (
                   <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                    <span>⚠</span> {errors.communityName}
+                    <span>⚠</span> {errors.community_name}
                   </p>
                 )}
               </div>
+            </div>
 
-              {/* Location */}
+            {/* Row 2: Location */}
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label
@@ -638,8 +621,8 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                     handleInputChange("location", e.target.value)
                   }
                   className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.location
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : ""
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
                     }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
@@ -659,7 +642,7 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
               </div>
             </div>
 
-            {/* Row 2: City and Country */}
+            {/* Row 3: City and Country */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* City */}
               <div>
@@ -684,8 +667,8 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                     handleInputChange("city", e.target.value)
                   }
                   className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.city
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : ""
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
                     }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
@@ -718,8 +701,8 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                     handleInputChange("country", e.target.value)
                   }
                   className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all ${errors.country
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : ""
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
                     }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
@@ -744,7 +727,7 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
               </div>
             </div>
 
-            {/* Row 3: Total Properties and Total Units */}
+            {/* Row 4: Total Properties and Total Units */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Total Properties */}
               <div>
@@ -756,27 +739,27 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                 </label>
                 <input
                   type="number"
-                  value={form.totalProperties}
+                  value={form.total_properties}
                   onChange={(e) =>
-                    handleInputChange("totalProperties", e.target.value)
+                    handleInputChange("total_properties", e.target.value)
                   }
                   min="0"
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.totalProperties
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : ""
+                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.total_properties
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
                     }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
-                    borderColor: errors.totalProperties
+                    borderColor: errors.total_properties
                       ? "#ef4444"
                       : themeUtils.getBorderColor(),
                     color: themeUtils.getTextColor(true),
                   }}
                   placeholder="0"
                 />
-                {errors.totalProperties && (
+                {errors.total_properties && (
                   <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                    <span>⚠</span> {errors.totalProperties}
+                    <span>⚠</span> {errors.total_properties}
                   </p>
                 )}
               </div>
@@ -791,27 +774,27 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                 </label>
                 <input
                   type="number"
-                  value={form.totalUnits}
+                  value={form.total_units}
                   onChange={(e) =>
-                    handleInputChange("totalUnits", e.target.value)
+                    handleInputChange("total_units", e.target.value)
                   }
                   min="0"
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.totalUnits
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                    : ""
+                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.total_units
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
                     }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
-                    borderColor: errors.totalUnits
+                    borderColor: errors.total_units
                       ? "#ef4444"
                       : themeUtils.getBorderColor(),
                     color: themeUtils.getTextColor(true),
                   }}
                   placeholder="0"
                 />
-                {errors.totalUnits && (
+                {errors.total_units && (
                   <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                    <span>⚠</span> {errors.totalUnits}
+                    <span>⚠</span> {errors.total_units}
                   </p>
                 )}
               </div>
@@ -840,8 +823,8 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                   handleInputChange("description", e.target.value)
                 }
                 className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all resize-none placeholder:text-gray-400 ${errors.description
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                  : ""
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : ""
                   }`}
                 style={{
                   backgroundColor: themeUtils.getBgColor("input"),
@@ -879,27 +862,27 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                   </label>
                   <input
                     type="text"
-                    value={form.managerName}
+                    value={form.manager_name}
                     onChange={(e) =>
-                      handleInputChange("managerName", e.target.value)
+                      handleInputChange("manager_name", e.target.value)
                     }
-                    className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.managerName
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : ""
+                    className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.manager_name
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                        : ""
                       }`}
                     style={{
                       backgroundColor: themeUtils.getBgColor("input"),
-                      borderColor: errors.managerName
+                      borderColor: errors.manager_name
                         ? "#ef4444"
                         : themeUtils.getBorderColor(),
                       color: themeUtils.getTextColor(true),
                     }}
                     placeholder="Manager Name"
-                    maxLength={50}
+                    maxLength={100}
                   />
-                  {errors.managerName && (
+                  {errors.manager_name && (
                     <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                      <span>⚠</span> {errors.managerName}
+                      <span>⚠</span> {errors.manager_name}
                     </p>
                   )}
                 </div>
@@ -911,52 +894,38 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
                   >
                     Contact Number
                   </label>
-                  <div className="flex">
-                    <input
-                      type="text"
-                      value={countryCode}
-                      readOnly
-                      className="w-20 px-3 py-2.5 text-sm rounded-l-lg border-y border-l focus:z-10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all text-center"
-                      style={{
-                        backgroundColor: themeUtils.getBgColor("hover"),
-                        borderColor: themeUtils.getBorderColor(),
-                        color: themeUtils.getTextColor(true),
-                      }}
-                    />
-                    <input
-                      type="tel"
-                      value={form.managerContact}
-                      onChange={(e) => {
-                        const val = e.target.value
-                          .replace(/\D/g, "")
-                          .slice(0, 15);
-                        handleInputChange("managerContact", val);
-                      }}
-                      className={`flex-1 px-4 py-2.5 text-sm rounded-r-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.managerContact
+                  <input
+                    type="tel"
+                    value={form.manager_contact}
+                    onChange={(e) => {
+                      const val = e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 15);
+                      handleInputChange("manager_contact", val);
+                    }}
+                    className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.manager_contact
                         ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                         : ""
-                        }`}
-                      style={{
-                        backgroundColor: themeUtils.getBgColor("input"),
-                        borderColor: errors.managerContact
-                          ? "#ef4444"
-                          : themeUtils.getBorderColor(),
-                        color: themeUtils.getTextColor(true),
-                      }}
-                      placeholder="50 123 4567"
-                      maxLength={9}
-                    />
-                  </div>
-                  {errors.managerContact && (
+                      }`}
+                    style={{
+                      backgroundColor: themeUtils.getBgColor("input"),
+                      borderColor: errors.manager_contact
+                        ? "#ef4444"
+                        : themeUtils.getBorderColor(),
+                      color: themeUtils.getTextColor(true),
+                    }}
+                    placeholder="501234567"
+                  />
+                  {errors.manager_contact && (
                     <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                      <span>⚠</span> {errors.managerContact}
+                      <span>⚠</span> {errors.manager_contact}
                     </p>
                   )}
                   <p
                     className="mt-1 text-xs"
                     style={{ color: themeUtils.getTextColor(false, true) }}
                   >
-                    Enter 0-9 digits only
+                    Enter digits only (e.g., 501234567)
                   </p>
                 </div>
               </div>

@@ -11,95 +11,135 @@ import Card, {
 } from "../../../../ui/Common/Card";
 import { RiArrowGoBackFill } from "react-icons/ri";
 import CommonDialog from "../../../../ui/Common/CommonDialog";
+import { API_URL_COMMUNITY } from "../../../../../config";
 
 const ViewCommunity = ({ community: propCommunity, onClose }) => {
   const { theme, themeUtils } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const isModal = !!propCommunity;
-  const communityData = propCommunity || location.state?.community;
-
+  const [loading, setLoading] = useState(false);
+  const [communityData, setCommunityData] = useState(null);
   const [properties, setProperties] = useState([]);
   const [loadingProperties, setLoadingProperties] = useState(false);
   const [error, setError] = useState(null);
 
-  // State for nested Property View drawer
-  const [isPropertyDrawerOpen, setIsPropertyDrawerOpen] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState(null);
+  const isModal = !!propCommunity;
+  const communityId = propCommunity?.community_id || location.state?.communityId;
 
-  // Normalize community data
-  const normalizedCommunity = communityData
-    ? {
-        name: communityData.community_name || communityData.name,
-        location: communityData.location || "-",
-        city: communityData.city || "-",
-        country: communityData.country || "-",
-        manager: communityData.manager_name || communityData.manager,
-        contact: communityData.manager_contact || communityData.contact,
-        totalProperties: communityData.total_properties || 0,
-        totalUnits: communityData.total_units || 0,
-        description: communityData.community_description || communityData.description,
+  // Base URL for API
+  const baseURL = API_URL_COMMUNITY || "http://192.168.1.39:5000";
+
+  // Fetch community details from API
+  useEffect(() => {
+    const fetchCommunityDetails = async () => {
+      if (!communityId) {
+        setError("Community ID not found");
+        setLoading(false);
+        return;
       }
-    : null;
 
-  // Mock properties data for static demo
+      setLoading(true);
+      try {
+        const response = await fetch(`${baseURL}/api/communities/${communityId}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          setCommunityData(data);
+          setError(null);
+        } else {
+          throw new Error(data.message || "Failed to load community details");
+        }
+      } catch (error) {
+        console.error("Error fetching community:", error);
+        setError(error.message || "Failed to load community details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // If propCommunity is provided directly, use it
+    if (propCommunity) {
+      setCommunityData(propCommunity);
+    } else if (communityId) {
+      fetchCommunityDetails();
+    } else {
+      setError("Community not found");
+      setLoading(false);
+    }
+  }, [communityId, propCommunity, baseURL]);
+
+  // Fetch properties for this community (mock data for now - you can replace with actual API)
   useEffect(() => {
     if (!communityData?.community_id) {
-      setLoadingProperties(false);
+      setProperties([]);
       return;
     }
 
     // Simulate loading properties
     setLoadingProperties(true);
     
-    // Mock properties data
+    // Mock properties data - replace with actual API call when available
     setTimeout(() => {
       const mockProperties = [
         {
           id: 101,
-          PropertyName: "Palm Tower A",
+          PropertyName: `${communityData.community_name} Tower A`,
           totalFloors: 15,
-          totalUnits: 120,
+          totalUnits: Math.floor(communityData.total_units / 2) || 120,
         },
         {
           id: 102,
-          PropertyName: "Palm Tower B",
+          PropertyName: `${communityData.community_name} Tower B`,
           totalFloors: 12,
-          totalUnits: 96,
-        },
-        {
-          id: 103,
-          PropertyName: "Garden Villas",
-          totalFloors: 2,
-          totalUnits: 24,
-        },
-        {
-          id: 104,
-          PropertyName: "Ocean Heights",
-          totalFloors: 25,
-          totalUnits: 200,
+          totalUnits: Math.floor(communityData.total_units / 2) || 96,
         },
       ];
       
       setProperties(mockProperties);
       setLoadingProperties(false);
     }, 500);
-  }, [communityData?.community_id]);
+  }, [communityData?.community_id, communityData?.community_name, communityData?.total_units]);
 
-  if (!normalizedCommunity) {
-    if (isModal)
-      return <div className="p-4 text-center">Community not found</div>;
+  if (loading) {
+    return (
+      <div className={isModal ? "p-4" : "p-6"}>
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+          <div
+            className="animate-spin rounded-full h-12 w-12 border-b-2 mb-4"
+            style={{ borderColor: theme.headerBg || "#6366f1" }}
+          ></div>
+          <p style={{ color: themeUtils.getTextColor(true) }}>
+            Loading community details...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !communityData) {
+    const errorMessage = error || "Community not found";
+    
+    if (isModal) {
+      return (
+        <div className="p-6 text-center">
+          <p style={{ color: themeUtils.getTextColor(true) }} className="mb-4">
+            {errorMessage}
+          </p>
+          <Button variant="danger" onClick={onClose} themeUtils={themeUtils}>
+            Close
+          </Button>
+        </div>
+      );
+    }
 
     return (
       <div className="p-6 text-center">
-        <p style={{ color: themeUtils.getTextColor(true) }}>
-          Community not found
+        <p style={{ color: themeUtils.getTextColor(true) }} className="mb-4">
+          {errorMessage}
         </p>
         <Button
           variant="danger"
           onClick={() => navigate("/community-management/communities")}
-          className="mt-4"
           themeUtils={themeUtils}
         >
           Back to Communities
@@ -109,12 +149,16 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
   }
 
   // Format contact
-  const formattedContact = (contact) => {
+  const formatContact = (contact) => {
     if (!contact) return "N/A";
-    if (contact.startsWith("+971")) {
-      return contact.substring(0, 4) + "-" + contact.substring(4);
+    const contactStr = contact.toString();
+    if (contactStr.startsWith("+971")) {
+      return contactStr.substring(0, 4) + "-" + contactStr.substring(4);
     }
-    return contact;
+    if (contactStr.startsWith("971")) {
+      return "+" + contactStr.substring(0, 3) + "-" + contactStr.substring(3);
+    }
+    return contactStr;
   };
 
   // Table headers
@@ -125,35 +169,32 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
     "Action",
   ];
 
-  // Render row - with drawer open instead of navigate
+  // Render row
   const renderPropertyRow = (proj, index) => (
     <>
       <td
         className="px-3 py-1.5 text-sm text-center"
         style={{ color: themeUtils.getTextColor(true) }}
       >
-        {proj.PropertyName ||
-          proj.projectName ||
-          proj.name ||
-          "Unnamed Property"}
+        {proj.PropertyName}
       </td>
       <td
         className="px-3 py-1.5 text-sm text-center"
         style={{ color: themeUtils.getTextColor(true) }}
       >
-        {proj.totalFloors || "-"}
+        {proj.totalFloors}
       </td>
       <td
         className="px-3 py-1.5 text-sm text-center"
         style={{ color: themeUtils.getTextColor(true) }}
       >
-        {proj.totalUnits || proj.totalApartments || "-"}
+        {proj.totalUnits}
       </td>
       <td className="px-3 py-1.5 text-center">
         <button
           onClick={() => {
-            setSelectedProperty(proj);
-            setIsPropertyDrawerOpen(true);
+            // Handle view property - you can implement this later
+            console.log("View property:", proj);
           }}
           className="transition-colors hover:opacity-80"
           style={{ color: theme.headerBg || "#6366f1" }}
@@ -186,7 +227,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
           </CardHeader>
         )}
 
-        {/* Main Content - No Image */}
+        {/* Main Content */}
         <div className={isModal ? "" : "bg-card rounded-lg"}>
           <div className={isModal ? "" : "p-6"}>
             {/* Community Details in Card Format */}
@@ -213,9 +254,19 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                   <div className="flex items-start gap-3">
                     <Building className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
                     <div>
+                      <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Community Code</p>
+                      <p className="text-base font-medium" style={{ color: themeUtils.getTextColor(true) }}>
+                        {communityData.community_code || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Building className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
+                    <div>
                       <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Community Name</p>
                       <p className="text-base font-medium" style={{ color: themeUtils.getTextColor(true) }}>
-                        {normalizedCommunity.name || "N/A"}
+                        {communityData.community_name || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -225,7 +276,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                     <div>
                       <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Location</p>
                       <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                        {normalizedCommunity.location}
+                        {communityData.location || "-"}
                       </p>
                     </div>
                   </div>
@@ -235,7 +286,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                     <div>
                       <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>City, Country</p>
                       <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                        {normalizedCommunity.city}, {normalizedCommunity.country}
+                        {communityData.city || "-"}, {communityData.country || "UAE"}
                       </p>
                     </div>
                   </div>
@@ -248,7 +299,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                     <div>
                       <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Community Manager</p>
                       <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                        {normalizedCommunity.manager || "N/A"}
+                        {communityData.manager_name || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -258,7 +309,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                     <div>
                       <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Manager Contact</p>
                       <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                        {formattedContact(normalizedCommunity.contact)}
+                        {formatContact(communityData.manager_contact)}
                       </p>
                     </div>
                   </div>
@@ -268,7 +319,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                     <div>
                       <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Properties</p>
                       <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                        {normalizedCommunity.totalProperties} Properties, {normalizedCommunity.totalUnits} Units
+                        {communityData.total_properties || 0} Properties, {communityData.total_units || 0} Units
                       </p>
                     </div>
                   </div>
@@ -276,11 +327,11 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
               </div>
 
               {/* Description - Full Width */}
-              {normalizedCommunity.description && normalizedCommunity.description !== "-" && (
+              {communityData.description && (
                 <div className="mt-4 pt-4 border-t" style={{ borderColor: themeUtils.getBorderColor() }}>
                   <p className="text-sm mb-2" style={{ color: themeUtils.getTextColor(false, true) }}>Description</p>
                   <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                    {normalizedCommunity.description}
+                    {communityData.description}
                   </p>
                 </div>
               )}
@@ -305,7 +356,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                   <div>
                     <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Total Properties</p>
                     <p className="text-2xl font-bold" style={{ color: themeUtils.getTextColor(true) }}>
-                      {normalizedCommunity.totalProperties}
+                      {communityData.total_properties || 0}
                     </p>
                   </div>
                 </div>
@@ -328,7 +379,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                   <div>
                     <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Total Units</p>
                     <p className="text-2xl font-bold" style={{ color: themeUtils.getTextColor(true) }}>
-                      {normalizedCommunity.totalUnits}
+                      {communityData.total_units || 0}
                     </p>
                   </div>
                 </div>
@@ -354,15 +405,13 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                 <div className="inline-block min-w-full align-middle">
                   <Table
                     headers={propertyHeaders}
-                    data={properties || []}
+                    data={properties}
                     renderRow={renderPropertyRow}
                     loading={loadingProperties}
                     emptyMessage={
                       loadingProperties
                         ? "Loading properties..."
-                        : error
-                          ? `Error: ${error}`
-                          : "No properties associated with this community."
+                        : "No properties associated with this community."
                     }
                   />
                 </div>
@@ -383,8 +432,6 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
           </div>
         )}
       </div>
-
-     
     </>
   );
 };
