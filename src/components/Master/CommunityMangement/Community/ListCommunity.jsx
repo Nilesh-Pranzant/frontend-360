@@ -1,5 +1,4 @@
-import React, { useState, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
 import { Plus, Download, RefreshCw } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
 import { useToast } from "../../../../ui/common/CostumeTost";
@@ -9,18 +8,17 @@ import RecordsPerPage from "../../../../ui/Common/RecordsPerPage";
 import Table from "../../../../ui/Common/Table";
 import ThreeDotsMenu from "../../../../ui/common/ThreeDotsMenu";
 import Button from "../../../../ui/Common/Button";
-import Card, { CardHeader, CardTitle } from "../../../../ui/Common/Card";
+import { CardHeader, CardTitle } from "../../../../ui/Common/Card";
 import CommonDialog from "../../../../ui/Common/CommonDialog";
 import AddCommunity from "./AddCommunity";
 import ViewCommunity from "./ViewCommunity";
 import EditCommunity from "./EditCommunity";
 import Pagination from "../../../../ui/Common/Pagination";
+import { API_URL_COMMUNITY } from "../../../../../config";
 
 const ListCommunity = () => {
-  const { theme, themeUtils } = useTheme();
-  const navigate = useNavigate();
+  const { themeUtils } = useTheme();
   const toast = useToast();
-  const location = useLocation();
 
   // Ref to prevent double delete execution
   const deleteInProgress = useRef(false);
@@ -33,222 +31,55 @@ const ListCommunity = () => {
   const [isViewDrawerOpen, setIsViewDrawerOpen] = useState(false);
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState(null);
+  const [communities, setCommunities] = useState([]);
 
-  // Static building images from free CDN sources
-  const buildingImages = [
-    "https://images.unsplash.com/photo-1545324418-cc1d3fa86c52?w=150&h=150&fit=crop", // Modern apartment
-    "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=150&h=150&fit=crop", // House
-    "https://images.unsplash.com/photo-1577495508048-b635879837f1?w=150&h=150&fit=crop", // Skyscraper
-    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150&h=150&fit=crop", // Office building
-    "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=150&h=150&fit=crop", // Apartment complex
-    "https://images.unsplash.com/photo-1460317442991-0ec209397118?w=150&h=150&fit=crop", // Modern building
-    "https://images.unsplash.com/photo-1558882224-dda1667339bb?w=150&h=150&fit=crop", // Luxury apartment
-    "https://images.unsplash.com/photo-1580041065738-e72023775cdc?w=150&h=150&fit=crop", // Residential building
-    "https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?w=150&h=150&fit=crop", // High rise
-    "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=150&h=150&fit=crop", // Modern architecture
-    "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?w=150&h=150&fit=crop", // Building facade
-    "https://images.unsplash.com/photo-1556911261-6bd341186b2f?w=150&h=150&fit=crop", // City building
-    "https://images.unsplash.com/photo-1556911220-bde9b7cb8b0d?w=150&h=150&fit=crop", // Apartment building
-    "https://images.unsplash.com/photo-1556912167-f556f1f39fdf?w=150&h=150&fit=crop", // Residential complex
-    "https://images.unsplash.com/photo-1556911073-5256ac39620c?w=150&h=150&fit=crop", // Modern apartment
-  ];
+  // Base URL for images
+  const baseURL = API_URL_COMMUNITY || "http://192.168.1.39:8000";
 
-  // Static data for communities with building images
-  const [communities, setCommunities] = useState([
-    {
-      community_id: 1,
-      community_name: "Al Nahda",
-      location: "Near Sahara Mall",
-      city: "Dubai",
-      country: "UAE",
-      manager_name: "Ahmed Al Mansouri",
-      manager_contact: "+971501234567",
-      total_properties: 25,
-      total_units: 120,
-      profile_picture: buildingImages[1],
-    },
-    {
-      community_id: 2,
-      community_name: "Al Furjan",
-      location: "Near Ibn Battuta",
-      city: "Dubai",
-      country: "UAE",
-      manager_name: "Fatima Al Hashemi",
-      manager_contact: "+971551234567",
-      total_properties: 18,
-      total_units: 95,
-      profile_picture: buildingImages[1],
-    },
-    {
-      community_id: 3,
-      community_name: "Khalifa City A",
-      location: "Near Abu Dhabi International Airport",
-      city: "Abu Dhabi",
-      country: "UAE",
-      manager_name: "Khalid Al Nuaimi",
-      manager_contact: "+971561234567",
-      total_properties: 32,
-      total_units: 210,
-      profile_picture: buildingImages[2],
-    },
-    {
-      community_id: 4,
-      community_name: "Al Reem Island",
-      location: "Shams Abu Dhabi",
-      city: "Abu Dhabi",
-      country: "UAE",
-      manager_name: "Mariam Al Zaabi",
-      manager_contact: "+971502345678",
-      total_properties: 45,
-      total_units: 340,
-      profile_picture: buildingImages[3],
-    },
-    {
-      community_id: 5,
-      community_name: "The Greens",
-      location: "Barsha Heights",
-      city: "Dubai",
-      country: "UAE",
-      manager_name: "Omar Al Qubaisi",
-      manager_contact: "+971521234567",
-      total_properties: 22,
-      total_units: 180,
-      profile_picture: buildingImages[4],
-    },
-    {
-      community_id: 6,
-      community_name: "Al Zahia",
-      location: "University City Road",
-      city: "Sharjah",
-      country: "UAE",
-      manager_name: "Noura Al Shamsi",
-      manager_contact: "+97165123456",
-      total_properties: 15,
-      total_units: 88,
-      profile_picture: buildingImages[5],
-    },
-    {
-      community_id: 7,
-      community_name: "Al Majaz",
-      location: "Corniche Road",
-      city: "Sharjah",
-      country: "UAE",
-      manager_name: "Saeed Al Tunaiji",
-      manager_contact: "+971561239876",
-      total_properties: 20,
-      total_units: 105,
-      profile_picture: buildingImages[5],
-    },
-    {
-      community_id: 8,
-      community_name: "Al Raha Beach",
-      location: "Al Raha",
-      city: "Abu Dhabi",
-      country: "UAE",
-      manager_name: "Layla Al Mazrouei",
-      manager_contact: "+971501238765",
-      total_properties: 38,
-      total_units: 275,
-      profile_picture: buildingImages[5],
-    },
-    {
-      community_id: 9,
-      community_name: "Jumeirah Golf Estates",
-      location: "Al Qudra Road",
-      city: "Dubai",
-      country: "UAE",
-      manager_name: "Rashid Al Falasi",
-      manager_contact: "+971551238765",
-      total_properties: 12,
-      total_units: 60,
-      profile_picture: buildingImages[8],
-    },
-    {
-      community_id: 10,
-      community_name: "Al Ghadeer",
-      location: "Dubai-Abu Dhabi Border",
-      city: "Dubai",
-      country: "UAE",
-      manager_name: "Hessa Al Marri",
-      manager_contact: "+971561239874",
-      total_properties: 9,
-      total_units: 45,
-      profile_picture: buildingImages[9],
-    },
-    {
-      community_id: 11,
-      community_name: "Al Muneera",
-      location: "Al Raha Beach",
-      city: "Abu Dhabi",
-      country: "UAE",
-      manager_name: "Hamad Al Shamsi",
-      manager_contact: "971501234567",
-      total_properties: 14,
-      total_units: 72,
-      profile_picture: buildingImages[10],
-    },
-    {
-      community_id: 12,
-      community_name: "Al Bandar",
-      location: "Al Raha Beach",
-      city: "Abu Dhabi",
-      country: "UAE",
-      manager_name: "Amal Al Ameri",
-      manager_contact: "+971561239871",
-      total_properties: 16,
-      total_units: 84,
-      profile_picture: buildingImages[11],
-    },
-    {
-      community_id: 13,
-      community_name: "Mirdif Hills",
-      location: "Mirdif",
-      city: "Dubai",
-      country: "UAE",
-      manager_name: "Faisal Al Falasi",
-      manager_contact: "+971551239871",
-      total_properties: 27,
-      total_units: 135,
-      profile_picture: buildingImages[12],
-    },
-    {
-      community_id: 14,
-      community_name: "Al Jadaf",
-      location: "Dubai Creek",
-      city: "Dubai",
-      country: "UAE",
-      manager_name: "Mona Al Qassimi",
-      manager_contact: "+971501239872",
-      total_properties: 11,
-      total_units: 55,
-      profile_picture: buildingImages[13],
-    },
-    {
-      community_id: 15,
-      community_name: "Al Samha",
-      location: "Near Abu Dhabi",
-      city: "Abu Dhabi",
-      country: "UAE",
-      manager_name: "Sultan Al Zaabi",
-      manager_contact: "+971561239873",
-      total_properties: 7,
-      total_units: 28,
-      profile_picture: buildingImages[14],
-    },
-  ]);
+  // Fetch communities from API
+  const fetchCommunities = async () => {
+    setLoading(true);
+    try {
+      const url = search 
+        ? `${baseURL}/api/communities?search=${encodeURIComponent(search)}`
+        : `${baseURL}/api/communities`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setCommunities(data);
+      } else {
+        console.error("Error fetching communities:", data);
+        toast.error("Error", "Failed to fetch communities. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error fetching communities:", error);
+      toast.error("Error", "Failed to fetch communities. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch and fetch on search change
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchCommunities();
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [search]);
 
   /* ================= FILTER + PAGINATION LOGIC ================= */
-  const filteredCommunities = communities.filter((c) =>
-    (c.community_name || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCommunities = communities;
 
   const paginatedCommunities =
     perPage === "All" || perPage === Infinity || perPage <= 0
       ? filteredCommunities
       : filteredCommunities.slice(
-        (currentPage - 1) * perPage,
-        currentPage * perPage
-      );
+          (currentPage - 1) * perPage,
+          currentPage * perPage
+        );
 
   const totalPages =
     perPage === "All" || perPage === Infinity || perPage <= 0
@@ -269,13 +100,26 @@ const ListCommunity = () => {
       accept: async () => {
         deleteInProgress.current = true;
         try {
-          setCommunities((prev) =>
-            prev.filter((c) => c.community_id !== communityId)
-          );
-          toast.error("Deleted!", "Community deleted successfully.");
+          const response = await fetch(`${baseURL}/api/communities/${communityId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          const result = await response.json();
+          
+          if (response.ok) {
+            setCommunities((prev) =>
+              prev.filter((c) => c.community_id !== communityId)
+            );
+            toast.success("Deleted!", "Community deleted successfully.");
+          } else {
+            throw new Error(result.message || "Failed to delete");
+          }
         } catch (error) {
           console.error("Delete failed:", error);
-          toast.error("Delete Failed", "Failed to delete community. Please try again.");
+          toast.error("Delete Failed", error.message || "Failed to delete community. Please try again.");
         } finally {
           setTimeout(() => { deleteInProgress.current = false; }, 1500);
         }
@@ -298,10 +142,23 @@ const ListCommunity = () => {
 
   const handleAdd = () => setIsAddDrawerOpen(true);
 
+  const handleAddSuccess = () => {
+    fetchCommunities();
+    setIsAddDrawerOpen(false);
+    toast.success("Success", "Community added successfully!");
+  };
+
+  const handleEditSuccess = () => {
+    fetchCommunities();
+    setIsEditDrawerOpen(false);
+    toast.success("Success", "Community updated successfully!");
+  };
+
   /* ================= EXPORT CSV ================= */
   const exportCSV = () => {
     const headers = [
       "Sr. No",
+      "Community Code",
       "Community Name",
       "Location",
       "City",
@@ -317,12 +174,13 @@ const ListCommunity = () => {
       ...filteredCommunities.map((c, i) =>
         [
           i + 1,
+          `"${c.community_code?.replace(/"/g, '""') || ""}"`,
           `"${c.community_name?.replace(/"/g, '""') || ""}"`,
           `"${c.location?.replace(/"/g, '""') || ""}"`,
           `"${c.city?.replace(/"/g, '""') || ""}"`,
-          `"${c.country?.replace(/"/g, '""') || ""}"`,
+          `"${c.country?.replace(/"/g, '""') || "UAE"}"`,
           `"${c.manager_name?.replace(/"/g, '""') || ""}"`,
-          `"${c.manager_contact?.replace(/"/g, '""') || ""}"`,
+          `"${c.manager_contact?.toString().replace(/"/g, '""') || ""}"`,
           c.total_properties || 0,
           c.total_units || 0,
         ].join(",")
@@ -339,35 +197,32 @@ const ListCommunity = () => {
   };
 
   const handleRefresh = async () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      toast.info("Static Mode", "Sync is not available in static demo mode.");
-    }, 500);
+    await fetchCommunities();
+    toast.success("Refreshed", "Community list updated successfully!");
   };
 
   // Helper: truncate long text
-  const truncateText = (text) => {
+  const truncateText = (text, maxLength = 15) => {
     if (typeof text !== "string" || text == null) return text || "-";
-    if (text.length <= 15) return text;
-    return text.substring(0, 15) + "...";
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
   };
 
-  // Format and validate UAE-style phone number
+  // Format phone number
   const formatManagerContact = (contact) => {
     if (!contact) return "-";
-    const cleaned = contact.replace(/[^\d+]/g, "");
-    const uaePhoneRegex = /^\+971[0-9]{9}$/;
-    if (uaePhoneRegex.test(cleaned)) {
-      return cleaned.substring(0, 4) + "-" + cleaned.substring(4);
+    const contactStr = contact.toString();
+    if (contactStr.length === 12 && contactStr.startsWith("971")) {
+      return `+${contactStr.substring(0, 3)}-${contactStr.substring(3)}`;
     }
-    return `${contact} ⚠️`;
+    return contactStr;
   };
 
   /* ================= TABLE COLUMNS ================= */
   const tableHeaders = [
     "Sr. No",
     "Profile",
+    "Community Code",
     "Community Name",
     "Location",
     "City",
@@ -395,19 +250,28 @@ const ListCommunity = () => {
       >
         <div className="flex justify-center">
           <img
-            src={community.profile_picture}
+            src={community.profile_image 
+              ? `${baseURL}${community.profile_image}` 
+              : `https://ui-avatars.com/api/?name=${encodeURIComponent(community.community_name || 'Community')}&background=6366f1&color=fff&size=40&bold=true`}
             alt={community.community_name || "Community"}
             className="w-10 h-10 rounded-full object-cover border"
             style={{
-              borderColor: theme.headerBg || "#6366f1",
+              borderColor: "#6366f1",
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
             }}
             onError={(e) => {
               e.target.onerror = null;
-              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(community.community_name)}&background=6366f1&color=fff&size=40&bold=true`;
+              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(community.community_name || 'Community')}&background=6366f1&color=fff&size=40&bold=true`;
             }}
           />
         </div>
+      </td>
+      <td
+        className="px-3 py-1.5 text-sm text-left truncate max-w-[150px]"
+        style={{ color: themeUtils.getTextColor(true) }}
+        title={community.community_code || "-"}
+      >
+        {truncateText(community.community_code)}
       </td>
       <td
         className="px-3 py-1.5 text-sm text-left truncate max-w-[200px]"
@@ -433,9 +297,9 @@ const ListCommunity = () => {
       <td
         className="px-3 py-1.5 text-sm text-left truncate max-w-[150px]"
         style={{ color: themeUtils.getTextColor(true) }}
-        title={community.country || "-"}
+        title={community.country || "UAE"}
       >
-        {truncateText(community.country)}
+        {truncateText(community.country || "UAE")}
       </td>
       <td
         className="px-3 py-1.5 text-sm text-left truncate max-w-[200px]"
@@ -446,16 +310,8 @@ const ListCommunity = () => {
       </td>
       <td
         className="px-3 py-1.5 text-sm text-left"
-        style={{
-          color:
-            community.manager_contact &&
-              !/^\+971[0-9]{9}$/.test(
-                community.manager_contact.replace(/[^\d+]/g, "")
-              )
-              ? "#e53e3e"
-              : themeUtils.getTextColor(true),
-        }}
-        title={community.manager_contact || "-"}
+        style={{ color: themeUtils.getTextColor(true) }}
+        title={community.manager_contact?.toString() || "-"}
       >
         {formatManagerContact(community.manager_contact)}
       </td>
@@ -523,6 +379,16 @@ const ListCommunity = () => {
               </Button>
 
               <Button
+                variant="secondary"
+                icon={RefreshCw}
+                onClick={handleRefresh}
+                className="whitespace-nowrap shrink-0"
+                loading={loading}
+              >
+                Refresh
+              </Button>
+
+              <Button
                 variant="success"
                 icon={Download}
                 onClick={exportCSV}
@@ -543,18 +409,20 @@ const ListCommunity = () => {
             data={paginatedCommunities}
             renderRow={renderRow}
             loading={loading}
-            emptyMessage="No communities found. Click 'Add Community' to create one."
+            emptyMessage="No communities found. Click 'Add' to create one."
           />
         </div>
       </div>
 
       {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        themeUtils={themeUtils}
-      />
+      {paginatedCommunities.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          themeUtils={themeUtils}
+        />
+      )}
 
       {/* Drawers / Dialogs */}
       <CommonDialog
@@ -567,9 +435,8 @@ const ListCommunity = () => {
       >
         <AddCommunity
           onClose={() => setIsAddDrawerOpen(false)}
-          onSuccess={() => {
-            setIsAddDrawerOpen(false);
-          }}
+          onSuccess={handleAddSuccess}
+          baseURL={baseURL}
         />
       </CommonDialog>
 
@@ -584,6 +451,7 @@ const ListCommunity = () => {
         <ViewCommunity
           community={selectedCommunity}
           onClose={() => setIsViewDrawerOpen(false)}
+          baseURL={baseURL}
         />
       </CommonDialog>
 
@@ -597,10 +465,10 @@ const ListCommunity = () => {
       >
         <EditCommunity
           communityId={selectedCommunity?.community_id}
+          community={selectedCommunity}
           onClose={() => setIsEditDrawerOpen(false)}
-          onSuccess={() => {
-            setIsEditDrawerOpen(false);
-          }}
+          onSuccess={handleEditSuccess}
+          baseURL={baseURL}
         />
       </CommonDialog>
     </div>
