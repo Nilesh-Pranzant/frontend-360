@@ -23,7 +23,6 @@ import { API_URL } from "../config";
 import axios from "axios";
 
 import AdminRoutes from "./admin/routes/AdminRoutes";
-import SOPManagementDashboard from "./components/SOP/dashboard/SOPManagementDashboard.jsx";
 import ListCommunity from "./components/Master/CommunityMangement/Community/ListCommunity.jsx";
 import UnitList from "./components/Master/CommunityMangement/Unit/UnitList.jsx"
 import ListProperty from "./components/Master/CommunityMangement/Property/ListProperty.jsx"
@@ -227,8 +226,6 @@ const AppContent = () => {
 
 
 
-
-                          <Route path="/sopmanagementdashboard" element={<SOPManagementDashboard />} />
 
                           {/* Add other specific routes here when their components are ready */}
                           <Route path="*" element={<div className="text-center mt-10 opacity-50">Select a menu item from the sidebar</div>} />
