@@ -1,6 +1,6 @@
 // pages/Unit/UnitList.js
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, RefreshCw } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
 import { useToast } from "../../../../ui/common/CostumeTost";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
@@ -16,6 +16,7 @@ import Card, {
   CardContent,
 } from "../../../../ui/Common/Card";
 import Pagination from "../../../../ui/Common/Pagination";
+import { API_URL_UNIT } from "../../../../../config";
 
 import AddUnit from "./AddUnit";
 import EditUnit from "./EditUnit";
@@ -38,6 +39,9 @@ const UnitList = () => {
 
   const [units, setUnits] = useState([]);
 
+  // Base URL for API
+  const baseURL = API_URL_UNIT || "http://192.168.1.39:5000";
+
   // Deduplication for toasts (prevents double messages)
   const lastShownToast = useRef({ message: "", timestamp: 0 });
 
@@ -57,246 +61,69 @@ const UnitList = () => {
   };
 
   /* ================= FETCH UNITS ================= */
-  useEffect(() => {
-    fetchUnits();
-  }, []);
-
   const fetchUnits = async () => {
     try {
       setLoading(true);
+      
+      const url = search 
+        ? `${baseURL}/api/units?search=${encodeURIComponent(search)}`
+        : `${baseURL}/api/units`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
 
-      // Static dummy data with status as "sold" or "unsold"
-      const dummyData = [
-        {
-          id: 1,
-          community_name: "Sunset Villas",
-          property_name: "Building A",
-          unit_number: "101",
-          customer_name: "John Smith",
-          floors: "1st Floor",
-          unit_type: "1 BHK",
-          status: "sold",
-          meter_number: "MTR001",
-          property_id: 101,
-          community_id: 1001,
-          is_active: true
-        },
-        {
-          id: 2,
-          community_name: "Sunset Villas",
-          property_name: "Building A",
-          unit_number: "102",
-          customer_name: "Customer Not Assigned",
-          floors: "1st Floor",
-          unit_type: "2 BHK",
-          status: "unsold",
-          meter_number: "Not Assigned",
-          property_id: 101,
-          community_id: 1001,
-          is_active: true
-        },
-        {
-          id: 3,
-          community_name: "Sunset Villas",
-          property_name: "Building B",
-          unit_number: "201",
-          customer_name: "Sarah Johnson",
-          floors: "2nd Floor",
-          unit_type: "3 BHK",
-          status: "sold",
-          meter_number: "MTR003",
-          property_id: 102,
-          community_id: 1001,
-          is_active: true
-        },
-        {
-          id: 4,
-          community_name: "Oakwood Heights",
-          property_name: "Tower 1",
-          unit_number: "1501",
-          customer_name: "Customer Not Assigned",
-          floors: "15th Floor",
-          unit_type: "Studio",
-          status: "unsold",
-          meter_number: "MTR004",
-          property_id: 201,
-          community_id: 1002,
-          is_active: true
-        },
-        {
-          id: 5,
-          community_name: "Oakwood Heights",
-          property_name: "Tower 1",
-          unit_number: "1502",
-          customer_name: "Michael Brown",
-          floors: "15th Floor",
-          unit_type: "1 BHK",
-          status: "sold",
-          meter_number: "MTR005",
-          property_id: 201,
-          community_id: 1002,
-          is_active: true
-        },
-        {
-          id: 6,
-          community_name: "Oakwood Heights",
-          property_name: "Tower 2",
-          unit_number: "1601",
-          customer_name: "Customer Not Assigned",
-          floors: "16th Floor",
-          unit_type: "2 BHK",
-          status: "unsold",
-          meter_number: "Not Assigned",
-          property_id: 202,
-          community_id: 1002,
-          is_active: true
-        },
-        {
-          id: 7,
-          community_name: "Riverside Apartments",
-          property_name: "Building C",
-          unit_number: "301",
-          customer_name: "Emily Davis",
-          floors: "3rd Floor",
-          unit_type: "3 BHK",
-          status: "sold",
-          meter_number: "MTR006",
-          property_id: 301,
-          community_id: 1003,
-          is_active: true
-        },
-        {
-          id: 8,
-          community_name: "Riverside Apartments",
-          property_name: "Building C",
-          unit_number: "302",
-          customer_name: "David Wilson",
-          floors: "3rd Floor",
-          unit_type: "2 BHK",
-          status: "sold",
-          meter_number: "MTR007",
-          property_id: 301,
-          community_id: 1003,
-          is_active: true
-        },
-        {
-          id: 9,
-          community_name: "Riverside Apartments",
-          property_name: "Building D",
-          unit_number: "401",
-          customer_name: "Customer Not Assigned",
-          floors: "4th Floor",
-          unit_type: "1 BHK",
-          status: "unsold",
-          meter_number: "Not Assigned",
-          property_id: 302,
-          community_id: 1003,
-          is_active: true
-        },
-        {
-          id: 10,
-          community_name: "Meadowbrook Estates",
-          property_name: "Building E",
-          unit_number: "501",
-          customer_name: "Customer Not Assigned",
-          floors: "5th Floor",
-          unit_type: "Studio",
-          status: "unsold",
-          meter_number: "MTR008",
-          property_id: 401,
-          community_id: 1004,
-          is_active: true
-        },
-        {
-          id: 11,
-          community_name: "Meadowbrook Estates",
-          property_name: "Building E",
-          unit_number: "502",
-          customer_name: "James Martinez",
-          floors: "5th Floor",
-          unit_type: "2 BHK",
-          status: "sold",
-          meter_number: "MTR009",
-          property_id: 401,
-          community_id: 1004,
-          is_active: true
-        },
-        {
-          id: 12,
-          community_name: "Meadowbrook Estates",
-          property_name: "Building F",
-          unit_number: "601",
-          customer_name: "Customer Not Assigned",
-          floors: "6th Floor",
-          unit_type: "3 BHK",
-          status: "unsold",
-          meter_number: "Not Assigned",
-          property_id: 402,
-          community_id: 1004,
-          is_active: true
-        },
-        {
-          id: 13,
-          community_name: "Palm Gardens",
-          property_name: "Building G",
-          unit_number: "701",
-          customer_name: "Patricia Garcia",
-          floors: "7th Floor",
-          unit_type: "1 BHK",
-          status: "sold",
-          meter_number: "MTR010",
-          property_id: 501,
-          community_id: 1005,
-          is_active: true
-        },
-        {
-          id: 14,
-          community_name: "Palm Gardens",
-          property_name: "Building G",
-          unit_number: "702",
-          customer_name: "Customer Not Assigned",
-          floors: "7th Floor",
-          unit_type: "2 BHK",
-          status: "unsold",
-          meter_number: "Not Assigned",
-          property_id: 501,
-          community_id: 1005,
-          is_active: true
-        },
-        {
-          id: 15,
-          community_name: "Harbor View",
-          property_name: "Tower A",
-          unit_number: "801",
-          customer_name: "Robert Taylor",
-          floors: "8th Floor",
-          unit_type: "3 BHK",
-          status: "sold",
-          meter_number: "MTR011",
-          property_id: 601,
-          community_id: 1006,
-          is_active: true
-        }
-      ];
+      if (response.ok) {
+        // Normalize data for frontend UI
+        const normalized = data.map((unit) => ({
+          id: unit.unit_id,
+          unit_id: unit.unit_id,
+          community_id: unit.community_id,
+          community_name: unit.community_name || "N/A",
+          property_id: unit.property_id,
+          property_name: unit.property_name || "N/A",
+          unit_number: unit.unit_number || "-",
+          unit_type: unit.unit_type || "-",
+          floor: unit.floor || "-",
+          status: unit.status || "unsold",
+          customer_name: unit.customer_name || "Customer Not Assigned",
+          customer_id: unit.customer_id,
+          meter_number: unit.meter_number || "Not Assigned",
+          is_active: unit.is_active,
+          description: unit.description || "",
+        }));
 
-      setUnits(dummyData);
-      setCurrentPage(1);
+        setUnits(normalized);
+        setCurrentPage(1);
+      } else {
+        console.error("Error fetching units:", data);
+        showSingleToast("error", "Error", "Failed to load units.");
+      }
     } catch (error) {
       console.error("Error loading units:", error);
-      showSingleToast("error", "Error", "Failed to load units.");
+      showSingleToast("error", "Error", "Failed to load units. Please check your connection.");
     } finally {
       setLoading(false);
     }
   };
 
-  const truncateText = (text) => {
+  // Initial fetch and fetch on search change
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchUnits();
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [search]);
+
+  const truncateText = (text, maxLength = 15) => {
     if (typeof text !== "string" || text == null) return text || "-";
-    if (text.length <= 15) return text;
-    return text.substring(0, 15) + "...";
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
   };
 
   const getStatusColor = (status) => {
     if (status === "sold") return "text-green-600 font-medium";
+    if (status === "reserved") return "text-yellow-600 font-medium";
     return "text-red-600 font-medium";
   };
 
@@ -305,24 +132,15 @@ const UnitList = () => {
     setCurrentPage(1);
   }, [search, perPage]);
 
-  const filteredUnits = units.filter(
-    (unit) =>
-      (unit.community_name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (unit.property_name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (unit.unit_number || "").toString().toLowerCase().includes(search.toLowerCase()) ||
-      (unit.customer_name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (unit.unit_type || "").toLowerCase().includes(search.toLowerCase()) ||
-      (unit.floors || "").toLowerCase().includes(search.toLowerCase()) ||
-      (unit.status || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUnits = units; // Search is handled by API
 
   const paginatedUnits =
     perPage === "All" || perPage === Infinity || perPage <= 0
       ? filteredUnits
       : filteredUnits.slice(
-        (currentPage - 1) * perPage,
-        currentPage * perPage
-      );
+          (currentPage - 1) * perPage,
+          currentPage * perPage
+        );
 
   const totalPages =
     perPage === "All" || perPage === Infinity || perPage <= 0
@@ -347,6 +165,7 @@ const UnitList = () => {
 
     if (statusInProgress.current) return;
     statusInProgress.current = true;
+    
     confirmDialog({
       message: `Do you want to ${isActive ? "deactivate" : "activate"} this unit?`,
       header: "Are you sure?",
@@ -356,21 +175,34 @@ const UnitList = () => {
       rejectLabel: "No",
       accept: async () => {
         try {
-          const updatedUnits = units.map((u) =>
-            u.id === id ? { ...u, is_active: !isActive } : u
-          );
-          setUnits(updatedUnits);
-          // Assuming localStorage is used for persistence, if not, this line can be removed or replaced with an API call
-          localStorage.setItem("units", JSON.stringify(updatedUnits));
+          // API call to delete/deactivate unit
+          const response = await fetch(`${baseURL}/api/units/${id}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
 
-          if (isActive) {
-            toast.error("Success", "Unit deactivated successfully!");
+          const result = await response.json();
+
+          if (response.ok) {
+            // Update local state
+            const updatedUnits = units.map((u) =>
+              u.id === id ? { ...u, is_active: !isActive, status: !isActive ? "unsold" : u.status } : u
+            );
+            setUnits(updatedUnits);
+
+            if (isActive) {
+              toast.error("Success", "Unit deactivated successfully!");
+            } else {
+              toast.success("Success", "Unit activated successfully!");
+            }
           } else {
-            toast.success("Success", "Unit activated successfully!");
+            throw new Error(result.message || "Failed to update unit status");
           }
         } catch (err) {
           console.error("Status Change Error:", err);
-          toast.error("Error", "Something went wrong while changing status");
+          toast.error("Error", err.message || "Something went wrong while changing status");
         } finally {
           setTimeout(() => {
             statusInProgress.current = false;
@@ -386,6 +218,23 @@ const UnitList = () => {
     });
   };
 
+  const handleAddSuccess = () => {
+    fetchUnits();
+    setIsAddDrawerOpen(false);
+    toast.success("Success", "Unit added successfully!");
+  };
+
+  const handleEditSuccess = () => {
+    fetchUnits();
+    setIsEditDrawerOpen(false);
+    toast.success("Success", "Unit updated successfully!");
+  };
+
+  const handleRefresh = async () => {
+    await fetchUnits();
+    toast.success("Refreshed", "Unit list updated successfully!");
+  };
+
   const exportCSV = () => {
     const headers = [
       "Sr. No",
@@ -393,7 +242,7 @@ const UnitList = () => {
       "Property Name",
       "Unit No",
       "Customer Name",
-      "Floors",
+      "Floor",
       "Unit Type",
       "Status",
     ];
@@ -407,7 +256,7 @@ const UnitList = () => {
           `"${unit.property_name?.replace(/"/g, '""') || ""}"`,
           `"${unit.unit_number || ""}"`,
           `"${unit.customer_name || "Customer Not Assigned"}"`,
-          `"${unit.floors || ""}"`,
+          `"${unit.floor || ""}"`,
           `"${unit.unit_type || ""}"`,
           `"${unit.status || ""}"`,
         ].join(",")
@@ -423,8 +272,6 @@ const UnitList = () => {
     toast.success("Export Successful", "Units exported to CSV successfully!");
   };
 
-  // No additional duplicate needed
-
   /* ================= TABLE CONFIG ================= */
   const tableHeaders = [
     "Sr. No",
@@ -432,7 +279,7 @@ const UnitList = () => {
     "Property Name",
     "Unit No",
     "Customer Name",
-    "Floors",
+    "Floor",
     "Unit Type",
     "Status",
     "Action",
@@ -480,7 +327,7 @@ const UnitList = () => {
           className="px-3 py-2 text-sm text-center"
           style={{ color: themeUtils.getTextColor(true) }}
         >
-          {unit.floors}
+          {unit.floor}
         </td>
         <td
           className="px-3 py-2 text-sm text-center"
@@ -490,7 +337,7 @@ const UnitList = () => {
         </td>
         <td className="px-3 py-2 text-center">
           <span className={getStatusColor(unit.status)}>
-            {unit.status}
+            {unit.status || "unsold"}
           </span>
         </td>
         <td className="px-3 py-2 text-center">
@@ -500,7 +347,7 @@ const UnitList = () => {
             onDelete={() => handleDelete(unit)}
             viewTitle="View Unit"
             editTitle="Edit Unit"
-            deleteTitle="Deactivate Unit"
+            deleteTitle={unit.is_active ? "Deactivate Unit" : "Activate Unit"}
             menuAlignment="right"
           />
         </td>
@@ -545,6 +392,16 @@ const UnitList = () => {
               </Button>
 
               <Button
+                variant="secondary"
+                icon={RefreshCw}
+                onClick={handleRefresh}
+                className="whitespace-nowrap shrink-0"
+                loading={loading}
+              >
+                Refresh
+              </Button>
+
+              <Button
                 variant="success"
                 icon={Download}
                 onClick={exportCSV}
@@ -571,12 +428,14 @@ const UnitList = () => {
           </div>
         </div>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          themeUtils={themeUtils}
-        />
+        {paginatedUnits.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            themeUtils={themeUtils}
+          />
+        )}
       </CardContent>
 
       {/* Dialogs */}
@@ -589,14 +448,9 @@ const UnitList = () => {
         width="75vw"
       >
         <AddUnit
-          onClose={() => {
-            setIsAddDrawerOpen(false);
-            fetchUnits();
-          }}
-          onSuccess={() => {
-            setIsAddDrawerOpen(false);
-            fetchUnits();
-          }}
+          onClose={() => setIsAddDrawerOpen(false)}
+          onSuccess={handleAddSuccess}
+          baseURL={baseURL}
         />
       </CommonDialog>
 
@@ -610,14 +464,10 @@ const UnitList = () => {
       >
         <EditUnit
           unit={selectedUnit}
-          onClose={() => {
-            setIsEditDrawerOpen(false);
-            fetchUnits();
-          }}
-          onSuccess={() => {
-            setIsEditDrawerOpen(false);
-            fetchUnits();
-          }}
+          unitId={selectedUnit?.unit_id || selectedUnit?.id}
+          onClose={() => setIsEditDrawerOpen(false)}
+          onSuccess={handleEditSuccess}
+          baseURL={baseURL}
         />
       </CommonDialog>
 
@@ -632,6 +482,7 @@ const UnitList = () => {
         <ViewUnit
           unit={selectedUnit}
           onClose={() => setIsViewDrawerOpen(false)}
+          baseURL={baseURL}
         />
       </CommonDialog>
     </div>

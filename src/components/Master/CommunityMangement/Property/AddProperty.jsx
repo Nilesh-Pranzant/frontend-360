@@ -11,59 +11,79 @@ import Card, {
   CardContent,
 } from "../../../../ui/Common/Card";
 import { RiArrowGoBackFill } from "react-icons/ri";
+import { API_URL_PROPERTY, API_URL_COMMUNITY } from "../../../../../config";
 
-const AddProperty = ({ onClose, onSuccess }) => {
+const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
   const { theme, themeUtils } = useTheme();
   const navigate = useNavigate();
   const toast = useToast();
 
   const [loading, setLoading] = useState(false);
   const [communities, setCommunities] = useState([]);
+  const [loadingCommunities, setLoadingCommunities] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
   const isModal = !!onClose;
 
+  // Base URL for API
+  const baseURL = propBaseURL || API_URL_PROPERTY || "http://192.168.1.39:5000";
+  const communityBaseURL = API_URL_COMMUNITY || "http://192.168.1.39:5000";
+
   const [form, setForm] = useState({
-    communityId: "",
-    communityName: "",
-    propertyName: "",
-    totalUnits: "",
-    addressLine1: "",
-    addressLine2: "",
-    country: "",
-    city: "",
-    zipCode: "",
+    community_id: "",
+    property_name: "",
+    total_units: "",
+    address_line1: "",
+    address_line2: "",
+    country: "UAE",
+    city: "Dubai",
+    zip_code: "",
     location: ""
   });
 
-  // Static communities data
+  // Fetch communities from API
   useEffect(() => {
-    const dummyCommunities = [
-      { community_id: 1001, community_name: "Sunset Villas" },
-      { community_id: 1002, community_name: "Oakwood Heights" },
-      { community_id: 1003, community_name: "Riverside Apartments" },
-      { community_id: 1004, community_name: "Meadowbrook Estates" },
-      { community_id: 1005, community_name: "Palm Gardens" },
-      { community_id: 1006, community_name: "Harbor View" },
-    ];
-    setCommunities(dummyCommunities);
-  }, []);
+    const fetchCommunities = async () => {
+      try {
+        setLoadingCommunities(true);
+        const response = await fetch(`${communityBaseURL}/api/communities`);
+        const data = await response.json();
 
-  // Update community name when ID changes
-  useEffect(() => {
-    if (form.communityId) {
-      const selectedCommunity = communities.find(c => c.community_id === parseInt(form.communityId));
-      if (selectedCommunity) {
-        setForm(prev => ({ ...prev, communityName: selectedCommunity.community_name }));
+        if (response.ok) {
+          setCommunities(data);
+        } else {
+          console.error("Error fetching communities:", data);
+          toast.error("Error", "Failed to load communities");
+        }
+      } catch (error) {
+        console.error("Error fetching communities:", error);
+        toast.error("Error", "Failed to load communities. Please check your connection.");
+      } finally {
+        setLoadingCommunities(false);
       }
-    }
-  }, [form.communityId, communities]);
+    };
+
+    fetchCommunities();
+  }, [communityBaseURL]);
 
   // Handle image selection
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      if (!validTypes.includes(file.type)) {
+        toast.error("Invalid File Type", "Please upload a valid image file (JPG, PNG, WEBP)");
+        return;
+      }
+
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File Too Large", "Image size should be less than 5MB");
+        return;
+      }
+
       setSelectedImage(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -87,10 +107,10 @@ const AddProperty = ({ onClose, onSuccess }) => {
   // Form submission
   // ────────────────────────────────────────────────
   const handleSubmit = async () => {
-    // Validation - only community and property name are required
+    // Validation - community and property name are required
     const missingFields = [];
-    if (!form.communityId) missingFields.push("Community");
-    if (!form.propertyName) missingFields.push("Property Name");
+    if (!form.community_id) missingFields.push("Community");
+    if (!form.property_name) missingFields.push("Property Name");
 
     if (missingFields.length > 0) {
       toast.error("Validation Error", `Please fill all required fields: ${missingFields.join(", ")}`);
@@ -100,43 +120,44 @@ const AddProperty = ({ onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const existingProperties = JSON.parse(localStorage.getItem("properties") || "[]");
-
-      let imageUrl = null;
-      if (imagePreview) {
-        imageUrl = imagePreview;
+      // Create FormData for API call
+      const formData = new FormData();
+      
+      // Append all form fields
+      formData.append("community_id", form.community_id);
+      formData.append("property_name", form.property_name);
+      formData.append("total_units", form.total_units || "0");
+      formData.append("address_line1", form.address_line1 || "");
+      formData.append("address_line2", form.address_line2 || "");
+      formData.append("country", form.country || "UAE");
+      formData.append("city", form.city || "Dubai");
+      formData.append("zip_code", form.zip_code || "");
+      formData.append("location", form.location || form.address_line1 || "");
+      
+      // Append image if selected
+      if (selectedImage) {
+        formData.append("property_image", selectedImage);
       }
 
-      const newProperty = {
-        id: Math.floor(Math.random() * 1000) + 100,
-        property_name: form.propertyName,
-        community_name: form.communityName,
-        community_id: parseInt(form.communityId),
-        total_units: form.totalUnits ? parseInt(form.totalUnits) : 0,
-        address_line1: form.addressLine1 || "",
-        address_line2: form.addressLine2 || "",
-        country: form.country || "UAE",
-        city: form.city || "Dubai",
-        location: form.location || form.addressLine1 || "",
-        zip_code: form.zipCode || "",
-        subscription: "Standard",
-        total_floors: 0,
-        property_image: imageUrl
-      };
+      // Make API call
+      const response = await fetch(`${baseURL}/api/properties`, {
+        method: 'POST',
+        body: formData,
+      });
 
-      existingProperties.push(newProperty);
-      localStorage.setItem("properties", JSON.stringify(existingProperties));
+      const data = await response.json();
 
-      toast.success("Success", "Property added successfully!");
+      if (response.ok) {
+        toast.success("Success", "Property added successfully!");
 
-      setTimeout(() => {
-        if (isModal && onClose) onClose();
-        if (onSuccess) onSuccess(newProperty);
-        if (!isModal) navigate("/community-management/Property", { replace: true });
-      }, 2000);
-
+        setTimeout(() => {
+          if (isModal && onClose) onClose();
+          if (onSuccess) onSuccess(data);
+          if (!isModal) navigate("/community-management/Property", { replace: true });
+        }, 1000);
+      } else {
+        throw new Error(data.message || "Failed to add property");
+      }
     } catch (err) {
       console.error("Add property error:", err);
       toast.error("Error", err.message || "Failed to add property");
@@ -155,8 +176,6 @@ const AddProperty = ({ onClose, onSuccess }) => {
 
   return (
     <div className={isModal ? "space-y-6" : "space-y-6 py-2 px-4"}>
-      {/* No AlertComponent needed with global toast */}
-
       {!isModal && (
         <CardHeader>
           <div className="flex items-center justify-between py-2">
@@ -191,7 +210,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
                   <input
                     id="property-image-upload"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
                     onChange={handleImageSelect}
                     className="hidden"
                     disabled={loading}
@@ -222,7 +241,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
                           className="text-xs"
                           style={{ color: themeUtils.getTextColor(false) }}
                         >
-                          (Optional)
+                          (Optional) PNG, JPG, WEBP (Max 5MB)
                         </p>
                       </div>
                     </div>
@@ -242,7 +261,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
                         <X className="w-3 h-3 text-white" />
                       </button>
 
-                      {/* Image preview - Now using object-cover to fill completely */}
+                      {/* Image preview */}
                       <img
                         src={imagePreview}
                         alt="Property preview"
@@ -284,10 +303,10 @@ const AddProperty = ({ onClose, onSuccess }) => {
                       Community Name *
                     </label>
                     <select
-                      name="communityId"
-                      value={form.communityId}
+                      name="community_id"
+                      value={form.community_id}
                       onChange={(e) =>
-                        setForm({ ...form, communityId: e.target.value })
+                        setForm({ ...form, community_id: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all appearance-none"
                       style={{
@@ -295,7 +314,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
                         borderColor: themeUtils.getBorderColor(),
                         color: themeUtils.getTextColor(true),
                       }}
-                      disabled={loading}
+                      disabled={loading || loadingCommunities}
                     >
                       <option value="">Select Community</option>
                       {communities.map((c) => (
@@ -304,6 +323,11 @@ const AddProperty = ({ onClose, onSuccess }) => {
                         </option>
                       ))}
                     </select>
+                    {loadingCommunities && (
+                      <p className="text-xs mt-1" style={{ color: themeUtils.getTextColor(false) }}>
+                        Loading communities...
+                      </p>
+                    )}
                   </div>
 
                   {/* Property Name */}
@@ -316,10 +340,10 @@ const AddProperty = ({ onClose, onSuccess }) => {
                     </label>
                     <input
                       type="text"
-                      name="propertyName"
-                      value={form.propertyName}
+                      name="property_name"
+                      value={form.property_name}
                       onChange={(e) =>
-                        setForm({ ...form, propertyName: e.target.value })
+                        setForm({ ...form, property_name: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
@@ -342,10 +366,10 @@ const AddProperty = ({ onClose, onSuccess }) => {
                     </label>
                     <input
                       type="number"
-                      name="totalUnits"
-                      value={form.totalUnits}
+                      name="total_units"
+                      value={form.total_units}
                       onChange={(e) =>
-                        setForm({ ...form, totalUnits: e.target.value })
+                        setForm({ ...form, total_units: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
@@ -465,10 +489,10 @@ const AddProperty = ({ onClose, onSuccess }) => {
                     </label>
                     <input
                       type="text"
-                      name="addressLine1"
-                      value={form.addressLine1}
+                      name="address_line1"
+                      value={form.address_line1}
                       onChange={(e) =>
-                        setForm({ ...form, addressLine1: e.target.value })
+                        setForm({ ...form, address_line1: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
@@ -490,10 +514,10 @@ const AddProperty = ({ onClose, onSuccess }) => {
                     </label>
                     <input
                       type="text"
-                      name="addressLine2"
-                      value={form.addressLine2}
+                      name="address_line2"
+                      value={form.address_line2}
                       onChange={(e) =>
-                        setForm({ ...form, addressLine2: e.target.value })
+                        setForm({ ...form, address_line2: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
@@ -515,10 +539,10 @@ const AddProperty = ({ onClose, onSuccess }) => {
                     </label>
                     <input
                       type="text"
-                      name="zipCode"
-                      value={form.zipCode}
+                      name="zip_code"
+                      value={form.zip_code}
                       onChange={(e) =>
-                        setForm({ ...form, zipCode: e.target.value })
+                        setForm({ ...form, zip_code: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
@@ -547,9 +571,9 @@ const AddProperty = ({ onClose, onSuccess }) => {
               variant="primary"
               onClick={handleSubmit}
               loading={loading}
-              disabled={loading}
+              disabled={loading || !form.community_id || !form.property_name}
             >
-              Submit
+              {loading ? "Adding..." : "Submit"}
             </Button>
           </div>
         </div>

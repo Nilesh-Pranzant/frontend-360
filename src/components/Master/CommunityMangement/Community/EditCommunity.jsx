@@ -5,11 +5,11 @@ import { useToast } from "../../../../ui/common/CostumeTost";
 import Button from "../../../../ui/Common/Button";
 import { API_URL_COMMUNITY } from "../../../../../config";
 
-const EditCommunity = ({ communityId, onClose, onSuccess }) => {
+const EditCommunity = ({ communityId, community, onClose, onSuccess }) => {
   const { themeUtils } = useTheme();
   const toast = useToast();
   const [loading, setLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(true);
+  const [fetchLoading, setFetchLoading] = useState(!community); // Only loading if no community data
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [existingImage, setExistingImage] = useState(null);
@@ -43,49 +43,49 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
     description: "",
   });
 
-  // Handle file selection
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      // Validate file type
-      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-      if (!validTypes.includes(selectedFile.type)) {
-        toast.error("Invalid File Type", "Please upload a valid image file (JPG, PNG, WEBP).");
-        return;
+  // Initialize form with passed community data if available
+  useEffect(() => {
+    if (community) {
+      // Extract contact number without country code if it has +971
+      let contactNumber = "";
+      if (community.manager_contact) {
+        const contactStr = community.manager_contact.toString();
+        if (contactStr.startsWith("+971")) {
+          contactNumber = contactStr.substring(4);
+        } else if (contactStr.startsWith("971")) {
+          contactNumber = contactStr.substring(3);
+        } else {
+          contactNumber = contactStr;
+        }
       }
 
-      // Validate file size (5MB max)
-      if (selectedFile.size > 5 * 1024 * 1024) {
-        toast.error("File Too Large", "Image size should be less than 5MB.");
-        return;
+      setForm({
+        community_code: community.community_code || "",
+        community_name: community.community_name || "",
+        location: community.location || "",
+        city: community.city || "",
+        country: community.country || "UAE",
+        manager_name: community.manager_name || "",
+        manager_contact: contactNumber,
+        total_properties: community.total_properties || "",
+        total_units: community.total_units || "",
+        description: community.description || "",
+      });
+
+      // Set existing image if available
+      if (community.profile_image) {
+        setExistingImage(`${baseURL}${community.profile_image}`);
       }
-
-      setFile(selectedFile);
-
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result);
-      };
-      reader.readAsDataURL(selectedFile);
+      
+      setFetchLoading(false);
     }
-  };
+  }, [community, baseURL]);
 
-  // Remove selected image
-  const handleRemoveImage = () => {
-    setFile(null);
-    setPreviewUrl(null);
-    setExistingImage(null);
-    // Reset file input
-    const fileInput = document.getElementById('community-image');
-    if (fileInput) {
-      fileInput.value = '';
-    }
-  };
-
-  // Fetch community details from API
+  // Fetch community details from API only if no community data passed
   useEffect(() => {
     const fetchCommunity = async () => {
+      if (!communityId || community) return; // Skip if we already have community data
+      
       try {
         setFetchLoading(true);
         
@@ -134,10 +134,50 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
       }
     };
 
-    if (communityId) {
+    if (communityId && !community) {
       fetchCommunity();
     }
-  }, [communityId, baseURL]);
+  }, [communityId, community, baseURL]);
+
+  // Handle file selection
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      // Validate file type
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      if (!validTypes.includes(selectedFile.type)) {
+        toast.error("Invalid File Type", "Please upload a valid image file (JPG, PNG, WEBP).");
+        return;
+      }
+
+      // Validate file size (5MB max)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        toast.error("File Too Large", "Image size should be less than 5MB.");
+        return;
+      }
+
+      setFile(selectedFile);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result);
+      };
+      reader.readAsDataURL(selectedFile);
+    }
+  };
+
+  // Remove selected image
+  const handleRemoveImage = () => {
+    setFile(null);
+    setPreviewUrl(null);
+    setExistingImage(null);
+    // Reset file input
+    const fileInput = document.getElementById('community-image');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
 
   // Validation rules
   const validateForm = () => {
@@ -367,7 +407,7 @@ const EditCommunity = ({ communityId, onClose, onSuccess }) => {
       }
 
       // Make API call
-      const response = await fetch(`${baseURL}/api/communities/${communityId}`, {
+      const response = await fetch(`${baseURL}/api/communities/${communityId || community?.community_id}`, {
         method: 'PUT',
         body: formData,
       });

@@ -11,8 +11,9 @@ import Card, {
   CardContent,
 } from "../../../../ui/Common/Card";
 import { RiArrowGoBackFill } from "react-icons/ri";
+import { API_URL_PROPERTY, API_URL_COMMUNITY } from "../../../../../config";
 
-const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
+const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: propBaseURL }) => {
   const { theme, themeUtils } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,107 +23,125 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [communities, setCommunities] = useState([]);
+  const [loadingCommunities, setLoadingCommunities] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [existingImage, setExistingImage] = useState(null);
+
+  // Base URL for API
+  const baseURL = propBaseURL || API_URL_PROPERTY || "http://192.168.1.39:5000";
+  const communityBaseURL = API_URL_COMMUNITY || "http://192.168.1.39:5000";
 
   // Check if modal mode
   const isModal = !!propProperty || !!onClose;
 
   const [form, setForm] = useState({
-    communityId: "",
-    communityName: "",
-    propertyName: "",
-    totalUnits: "",
-    addressLine1: "",
-    addressLine2: "",
+    community_id: "",
+    community_name: "",
+    property_name: "",
+    total_units: "",
+    address_line1: "",
+    address_line2: "",
     country: "",
     city: "",
     location: "",
-    zipCode: ""
+    zip_code: ""
   });
 
-  // Static communities data
+  // Fetch communities from API
   useEffect(() => {
-    const dummyCommunities = [
-      { community_id: 1001, community_name: "Sunset Villas" },
-      { community_id: 1002, community_name: "Oakwood Heights" },
-      { community_id: 1003, community_name: "Riverside Apartments" },
-      { community_id: 1004, community_name: "Meadowbrook Estates" },
-      { community_id: 1005, community_name: "Palm Gardens" },
-      { community_id: 1006, community_name: "Harbor View" },
-    ];
-    setCommunities(dummyCommunities);
-  }, []);
+    const fetchCommunities = async () => {
+      try {
+        setLoadingCommunities(true);
+        const response = await fetch(`${communityBaseURL}/api/communities`);
+        const data = await response.json();
+
+        if (response.ok) {
+          setCommunities(data);
+        } else {
+          console.error("Error fetching communities:", data);
+          toast.error("Error", "Failed to load communities");
+        }
+      } catch (error) {
+        console.error("Error fetching communities:", error);
+        toast.error("Error", "Failed to load communities. Please check your connection.");
+      } finally {
+        setLoadingCommunities(false);
+      }
+    };
+
+    fetchCommunities();
+  }, [communityBaseURL]);
 
   /* ================= GET PROPERTY DATA ================= */
   useEffect(() => {
-    // Get property from location state (passed during navigation)
-    if (location.state?.property) {
-      populateForm(location.state.property);
-      setLoading(false);
-    }
-    // Get property from prop
-    else if (propProperty) {
-      populateForm(propProperty);
-      setLoading(false);
-    }
-    // Try to get from localStorage if we have ID in URL
-    else if (id) {
-      loadPropertyFromStorage(id);
-    } else {
-      console.error("No property data available");
-      toast.error("Error", "No property data found. Please go back and try again.");
-      if (!isModal) navigate("/community-management/Property");
-      setLoading(false);
-    }
-  }, [id, propProperty, location.state]);
+    const fetchProperty = async () => {
+      // Get property ID
+      const propertyId = 
+        propProperty?.property_id || 
+        propProperty?.id || 
+        location.state?.property?.property_id ||
+        location.state?.property?.id ||
+        id;
 
-  const loadPropertyFromStorage = (propertyId) => {
-    try {
-      setLoading(true);
-
-      // Get properties from localStorage
-      const existingProperties = JSON.parse(localStorage.getItem("properties") || "[]");
-
-      // Find property by id
-      const foundProperty = existingProperties.find(p => p.id === parseInt(propertyId) || p.id === propertyId);
-
-      if (foundProperty) {
-        populateForm(foundProperty);
-      } else {
-        console.error("Property not found in localStorage");
-        toast.error("Error", "Property not found");
+      if (!propertyId) {
+        console.error("No property ID available");
+        toast.error("Error", "No property ID found. Please go back and try again.");
         if (!isModal) navigate("/community-management/Property");
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error("Error loading property from storage:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      // If we have the full property object from props, use it directly
+      if (propProperty) {
+        populateForm(propProperty);
+        setLoading(false);
+        return;
+      }
+
+      // Otherwise fetch from API
+      try {
+        setLoading(true);
+        const response = await fetch(`${baseURL}/api/properties/${propertyId}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          populateForm(data);
+        } else {
+          throw new Error(data.message || "Failed to load property details");
+        }
+      } catch (error) {
+        console.error("Error fetching property:", error);
+        toast.error("Error", error.message || "Failed to load property details");
+        if (!isModal) navigate("/community-management/Property");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperty();
+  }, [id, propProperty, location.state, isModal, baseURL]);
 
   const populateForm = (property) => {
     console.log("Populating form with property:", property);
 
-    // Find community ID from community name
-    const community = communities.find(c => c.community_name === property.community_name);
-
     setForm({
-      communityId: community?.community_id || property.community_id || "",
-      communityName: property.community_name || property.communityName || "",
-      propertyName: property.property_name || property.PropertyName || "",
-      totalUnits: property.total_units?.toString() || property.totalUnits?.toString() || "",
-      addressLine1: property.address_line1 || property.addressLine1 || "",
-      addressLine2: property.address_line2 || property.addressLine2 || "",
-      country: property.country || "",
-      city: property.city || "",
+      community_id: property.community_id || "",
+      community_name: property.community_name || "",
+      property_name: property.property_name || "",
+      total_units: property.total_units?.toString() || "",
+      address_line1: property.address_line1 || "",
+      address_line2: property.address_line2 || "",
+      country: property.country || "UAE",
+      city: property.city || "Dubai",
       location: property.location || property.address_line1 || "",
-      zipCode: property.zip_code || property.zipCode || "",
+      zip_code: property.zip_code || "",
     });
 
     // Set image preview if property has an image
     if (property.property_image) {
-      setImagePreview(property.property_image);
+      setExistingImage(`${baseURL}${property.property_image}`);
+      setImagePreview(`${baseURL}${property.property_image}`);
     }
   };
 
@@ -130,10 +149,24 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      if (!validTypes.includes(file.type)) {
+        toast.error("Invalid File Type", "Please upload a valid image file (JPG, PNG, WEBP)");
+        return;
+      }
+
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File Too Large", "Image size should be less than 5MB");
+        return;
+      }
+
       setSelectedImage(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
+        setExistingImage(null);
       };
       reader.readAsDataURL(file);
     }
@@ -143,6 +176,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
   const handleImageRemove = () => {
     setSelectedImage(null);
     setImagePreview(null);
+    setExistingImage(null);
     const fileInput = document.getElementById('property-image-upload');
     if (fileInput) {
       fileInput.value = '';
@@ -152,11 +186,11 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
   /* ================= UPDATE PROPERTY ================= */
   const handleSubmit = async () => {
     // Get property ID
-    const propertyId =
-      location.state?.property?.id ||
+    const propertyId = 
+      propProperty?.property_id || 
+      propProperty?.id || 
       location.state?.property?.property_id ||
-      propProperty?.id ||
-      propProperty?.property_id ||
+      location.state?.property?.id ||
       id;
 
     if (!propertyId) {
@@ -164,8 +198,8 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
       return;
     }
 
-    // Validate required fields (only Property Name is required)
-    if (!form.propertyName.trim()) {
+    // Validate required fields (Property Name is required)
+    if (!form.property_name.trim()) {
       toast.error("Validation Error", "Property Name is required.");
       return;
     }
@@ -173,47 +207,42 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
     setSaving(true);
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create FormData for API call
+      const formData = new FormData();
+      
+      formData.append("community_id", form.community_id || "");
+      formData.append("property_name", form.property_name.trim());
+      formData.append("total_units", form.total_units || "0");
+      formData.append("address_line1", form.address_line1 || "");
+      formData.append("address_line2", form.address_line2 || "");
+      formData.append("country", form.country || "UAE");
+      formData.append("city", form.city || "Dubai");
+      formData.append("zip_code", form.zip_code || "");
+      formData.append("location", form.location || form.address_line1 || "");
+      
+      // Append new image if selected
+      if (selectedImage) {
+        formData.append("property_image", selectedImage);
+      }
 
-      // Get existing properties from localStorage
-      const existingProperties = JSON.parse(localStorage.getItem("properties") || "[]");
+      // Make API call
+      const response = await fetch(`${baseURL}/api/properties/${propertyId}`, {
+        method: 'PUT',
+        body: formData,
+      });
 
-      // Find the property to update
-      const propertyIndex = existingProperties.findIndex(p =>
-        p.id === parseInt(propertyId) || p.id === propertyId
-      );
+      const data = await response.json();
 
-      if (propertyIndex !== -1) {
-        // Update existing property
-        existingProperties[propertyIndex] = {
-          ...existingProperties[propertyIndex],
-          property_name: form.propertyName,
-          community_name: form.communityName,
-          community_id: parseInt(form.communityId) || existingProperties[propertyIndex].community_id,
-          total_units: form.totalUnits ? parseInt(form.totalUnits) : 0,
-          address_line1: form.addressLine1 || "",
-          address_line2: form.addressLine2 || "",
-          country: form.country || "UAE",
-          city: form.city || "Dubai",
-          location: form.location || form.addressLine1 || "",
-          zip_code: form.zipCode || "",
-          property_image: imagePreview || existingProperties[propertyIndex].property_image // Update image if changed
-        };
+      if (response.ok) {
+        toast.success("Success", "Property updated successfully!");
 
-        // Save back to localStorage
-        localStorage.setItem("properties", JSON.stringify(existingProperties));
-
-        toast.warn("Success", "Property updated successfully!");
-
-        // Navigate after auto-close timeout
         setTimeout(() => {
           if (isModal && onClose) onClose();
-          if (onSuccess) onSuccess();
+          if (onSuccess) onSuccess(data);
           if (!isModal) navigate("/community-management/Property", { replace: true });
-        }, 2000);
+        }, 1000);
       } else {
-        throw new Error("Property not found in storage");
+        throw new Error(data.message || "Failed to update property");
       }
     } catch (error) {
       console.error("Update error:", error);
@@ -249,8 +278,6 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
 
   return (
     <div className={isModal ? "space-y-6" : "space-y-6 py-2 px-4"}>
-      {/* No AlertComponent needed with global toast */}
-
       {!isModal && (
         <CardHeader>
           <div className="flex items-center justify-between py-2">
@@ -291,7 +318,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                   <input
                     id="property-image-upload"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
                     onChange={handleImageSelect}
                     className="hidden"
                     disabled={saving}
@@ -327,7 +354,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                         borderColor: theme.headerBg || "#6366f1",
                       }}
                     >
-                      {/* Image preview - Now using object-cover to fill completely */}
+                      {/* Image preview */}
                       <img
                         src={imagePreview}
                         alt="Property preview"
@@ -372,26 +399,45 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                   Property Details
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Community Name - Display only */}
+                  {/* Community Name - Dropdown */}
                   <div>
                     <label
                       className="block text-sm font-medium mb-1"
                       style={{ color: themeUtils.getTextColor(false) }}
                     >
-                      Community Name
+                      Community Name *
                     </label>
-                    <input
-                      type="text"
-                      value={form.communityName || ""}
-                      className="w-full px-3 py-2 text-sm rounded-lg border bg-gray-100"
+                    <select
+                      name="community_id"
+                      value={form.community_id}
+                      onChange={(e) => {
+                        const selectedCommunity = communities.find(c => c.community_id === parseInt(e.target.value));
+                        setForm({ 
+                          ...form, 
+                          community_id: e.target.value,
+                          community_name: selectedCommunity?.community_name || ""
+                        });
+                      }}
+                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
                         backgroundColor: themeUtils.getBgColor("input"),
                         borderColor: themeUtils.getBorderColor(),
                         color: themeUtils.getTextColor(true),
                       }}
-                      disabled
-                      readOnly
-                    />
+                      disabled={saving || loadingCommunities}
+                    >
+                      <option value="">Select Community</option>
+                      {communities.map((c) => (
+                        <option key={c.community_id} value={c.community_id}>
+                          {c.community_name}
+                        </option>
+                      ))}
+                    </select>
+                    {loadingCommunities && (
+                      <p className="text-xs mt-1" style={{ color: themeUtils.getTextColor(false) }}>
+                        Loading communities...
+                      </p>
+                    )}
                   </div>
 
                   {/* Property Name */}
@@ -404,10 +450,10 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                     </label>
                     <input
                       type="text"
-                      name="propertyName"
-                      value={form.propertyName}
+                      name="property_name"
+                      value={form.property_name}
                       onChange={(e) =>
-                        setForm({ ...form, propertyName: e.target.value })
+                        setForm({ ...form, property_name: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
@@ -430,10 +476,10 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                     </label>
                     <input
                       type="number"
-                      name="totalUnits"
-                      value={form.totalUnits}
+                      name="total_units"
+                      value={form.total_units}
                       onChange={(e) =>
-                        setForm({ ...form, totalUnits: e.target.value })
+                        setForm({ ...form, total_units: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
@@ -554,10 +600,10 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                     </label>
                     <input
                       type="text"
-                      name="addressLine1"
-                      value={form.addressLine1}
+                      name="address_line1"
+                      value={form.address_line1}
                       onChange={(e) =>
-                        setForm({ ...form, addressLine1: e.target.value })
+                        setForm({ ...form, address_line1: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
@@ -580,10 +626,10 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                     </label>
                     <input
                       type="text"
-                      name="addressLine2"
-                      value={form.addressLine2}
+                      name="address_line2"
+                      value={form.address_line2}
                       onChange={(e) =>
-                        setForm({ ...form, addressLine2: e.target.value })
+                        setForm({ ...form, address_line2: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
@@ -606,10 +652,10 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
                     </label>
                     <input
                       type="text"
-                      name="zipCode"
-                      value={form.zipCode}
+                      name="zip_code"
+                      value={form.zip_code}
                       onChange={(e) =>
-                        setForm({ ...form, zipCode: e.target.value })
+                        setForm({ ...form, zip_code: e.target.value })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                       style={{
@@ -643,9 +689,9 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess }) => {
               variant="primary"
               onClick={handleSubmit}
               loading={saving}
-              disabled={saving}
+              disabled={saving || !form.property_name.trim()}
             >
-              Update
+              {saving ? "Updating..." : "Update"}
             </Button>
           </div>
         </div>

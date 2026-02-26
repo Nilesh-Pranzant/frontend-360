@@ -10,8 +10,9 @@ import Card, {
   CardContent,
 } from "../../../../ui/Common/Card";
 import { RiArrowGoBackFill } from "react-icons/ri";
+import { API_URL_UNIT, API_URL_COMMUNITY, API_URL_PROPERTY } from "../../../../../config";
 
-const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
+const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) => {
   const { themeUtils } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,125 +21,145 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadingCommunities, setLoadingCommunities] = useState(true);
+  const [loadingProperties, setLoadingProperties] = useState(false);
 
-  // Static data for dropdowns
+  // API data
   const [communities, setCommunities] = useState([]);
   const [properties, setProperties] = useState([]);
+
+  // Base URL for API
+  const baseURL = propBaseURL || API_URL_UNIT || "http://192.168.1.39:5000";
+  const communityBaseURL = API_URL_COMMUNITY || "http://192.168.1.39:5000";
+  const propertyBaseURL = API_URL_PROPERTY || "http://192.168.1.39:5000";
 
   // Check if modal mode
   const isModal = !!propUnit || !!onClose;
 
   const [form, setForm] = useState({
-    communityId: "",
-    communityName: "",
-    propertyId: "",
-    propertyName: "",
-    unitNumber: "",
-    customerName: "",
-    floors: "",
-    unitType: "",
-    occupancyStatus: "VACANT",
-    meterNumber: "Not Assigned"
+    unit_id: "",
+    community_id: "",
+    community_name: "",
+    property_id: "",
+    property_name: "",
+    unit_number: "",
+    customer_name: "",
+    floor: "",
+    unit_type: "",
+    status: "unsold",
+    meter_number: "",
+    description: ""
   });
 
-  // Static communities data
+  // Fetch communities from API
   useEffect(() => {
-    const dummyCommunities = [
-      { community_id: 1001, community_name: "Sunset Villas" },
-      { community_id: 1002, community_name: "Oakwood Heights" },
-      { community_id: 1003, community_name: "Riverside Apartments" },
-      { community_id: 1004, community_name: "Meadowbrook Estates" },
-      { community_id: 1005, community_name: "Palm Gardens" },
-      { community_id: 1006, community_name: "Harbor View" },
-    ];
-    setCommunities(dummyCommunities);
-  }, []);
+    const fetchCommunities = async () => {
+      try {
+        setLoadingCommunities(true);
+        const response = await fetch(`${communityBaseURL}/api/communities`);
+        const data = await response.json();
+
+        if (response.ok) {
+          setCommunities(data);
+        } else {
+          console.error("Error fetching communities:", data);
+          toast.error("Error", "Failed to load communities");
+        }
+      } catch (error) {
+        console.error("Error fetching communities:", error);
+        toast.error("Error", "Failed to load communities. Please check your connection.");
+      } finally {
+        setLoadingCommunities(false);
+      }
+    };
+
+    fetchCommunities();
+  }, [communityBaseURL]);
 
   // Load unit data on component mount
   useEffect(() => {
-    loadUnitData();
-  }, [propUnit, location.state, id]);
+    const fetchUnit = async () => {
+      const unitId = propUnit?.unit_id || propUnit?.id || location.state?.unit?.unit_id || location.state?.unit?.id || id;
 
-  const loadUnitData = () => {
-    setLoading(true);
-
-    // Get unit data from props, location state, or localStorage
-    let unitData = null;
-
-    if (propUnit) {
-      unitData = propUnit;
-    } else if (location.state?.unit) {
-      unitData = location.state.unit;
-    } else if (id) {
-      // Try to get from localStorage using ID
-      const existingUnits = JSON.parse(localStorage.getItem("units") || "[]");
-      unitData = existingUnits.find(u => u.id === parseInt(id) || u.id === id);
-    }
-
-    if (unitData) {
-      // Find community ID from community name
-      const community = communities.find(c => c.community_name === unitData.community_name);
-
-      setForm({
-        id: unitData.id || "",
-        communityId: community?.community_id || unitData.community_id || "",
-        communityName: unitData.community_name || "",
-        propertyId: unitData.property_id || "",
-        propertyName: unitData.property_name || "",
-        unitNumber: unitData.unit_number || "",
-        customerName: unitData.customer_name || "",
-        floors: unitData.floors || "",
-        unitType: unitData.unit_type || "",
-        occupancyStatus: unitData.occupancy_status || "VACANT",
-        meterNumber: unitData.meter_number || "Not Assigned"
-      });
-
-      // Load properties for the community
-      if (unitData.community_id || community?.community_id) {
-        loadProperties(community?.community_id || unitData.community_id);
+      if (!unitId) {
+        console.error("No unit ID available");
+        toast.error("Error", "No unit ID found");
+        setLoading(false);
+        return;
       }
-    }
 
-    setLoading(false);
-  };
+      // If we have the full unit object from props, use it directly
+      if (propUnit) {
+        populateForm(propUnit);
+        setLoading(false);
+        return;
+      }
 
-  // Load properties based on community ID
-  const loadProperties = (communityId) => {
-    const dummyProperties = {
-      1001: [ // Sunset Villas
-        { property_id: 101, property_name: "Building A", community_id: 1001 },
-        { property_id: 102, property_name: "Building B", community_id: 1001 },
-        { property_id: 103, property_name: "Building C", community_id: 1001 },
-      ],
-      1002: [ // Oakwood Heights
-        { property_id: 201, property_name: "Tower 1", community_id: 1002 },
-        { property_id: 202, property_name: "Tower 2", community_id: 1002 },
-        { property_id: 203, property_name: "Tower 3", community_id: 1002 },
-      ],
-      1003: [ // Riverside Apartments
-        { property_id: 301, property_name: "Building C", community_id: 1003 },
-        { property_id: 302, property_name: "Building D", community_id: 1003 },
-        { property_id: 303, property_name: "Building E", community_id: 1003 },
-      ],
-      1004: [ // Meadowbrook Estates
-        { property_id: 401, property_name: "Building E", community_id: 1004 },
-        { property_id: 402, property_name: "Building F", community_id: 1004 },
-        { property_id: 403, property_name: "Building G", community_id: 1004 },
-      ],
-      1005: [ // Palm Gardens
-        { property_id: 501, property_name: "Building G", community_id: 1005 },
-        { property_id: 502, property_name: "Building H", community_id: 1005 },
-        { property_id: 503, property_name: "Building I", community_id: 1005 },
-      ],
-      1006: [ // Harbor View
-        { property_id: 601, property_name: "Tower A", community_id: 1006 },
-        { property_id: 602, property_name: "Tower B", community_id: 1006 },
-        { property_id: 603, property_name: "Tower C", community_id: 1006 },
-      ],
+      try {
+        setLoading(true);
+        const response = await fetch(`${baseURL}/api/units/${unitId}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          populateForm(data);
+        } else {
+          throw new Error(data.message || "Failed to load unit details");
+        }
+      } catch (error) {
+        console.error("Error fetching unit:", error);
+        toast.error("Error", error.message || "Failed to load unit details");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const communityIdNum = parseInt(communityId);
-    setProperties(dummyProperties[communityIdNum] || []);
+    fetchUnit();
+  }, [id, propUnit, location.state, baseURL]);
+
+  const populateForm = (unit) => {
+    setForm({
+      unit_id: unit.unit_id || unit.id || "",
+      community_id: unit.community_id || "",
+      community_name: unit.community_name || "",
+      property_id: unit.property_id || "",
+      property_name: unit.property_name || "",
+      unit_number: unit.unit_number || "",
+      customer_name: unit.customer_name || "",
+      floor: unit.floor || "",
+      unit_type: unit.unit_type || "",
+      status: unit.status || "unsold",
+      meter_number: unit.meter_number || "",
+      description: unit.description || ""
+    });
+
+    // Load properties for the community
+    if (unit.community_id) {
+      fetchProperties(unit.community_id);
+    }
+  };
+
+  // Fetch properties when community is selected
+  const fetchProperties = async (communityId) => {
+    if (!communityId) {
+      setProperties([]);
+      return;
+    }
+
+    try {
+      setLoadingProperties(true);
+      const response = await fetch(`${propertyBaseURL}/api/properties?community_id=${communityId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setProperties(data);
+      } else {
+        console.error("Error fetching properties:", data);
+      }
+    } catch (error) {
+      console.error("Error fetching properties:", error);
+    } finally {
+      setLoadingProperties(false);
+    }
   };
 
   // Handle community change
@@ -146,15 +167,12 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
     const selectedCommunity = communities.find(c => c.community_id === parseInt(communityId));
     setForm({
       ...form,
-      communityId,
-      communityName: selectedCommunity?.community_name || "",
-      propertyId: "",
-      propertyName: ""
+      community_id: communityId,
+      community_name: selectedCommunity?.community_name || "",
+      property_id: "",
+      property_name: ""
     });
-    setProperties([]);
-    if (communityId) {
-      loadProperties(communityId);
-    }
+    fetchProperties(communityId);
   };
 
   // Handle property change
@@ -162,8 +180,8 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
     const selectedProperty = properties.find(p => p.property_id === parseInt(propertyId));
     setForm({
       ...form,
-      propertyId,
-      propertyName: selectedProperty?.property_name || ""
+      property_id: propertyId,
+      property_name: selectedProperty?.property_name || ""
     });
   };
 
@@ -171,46 +189,41 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
     try {
       setSaving(true);
 
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Prepare data for API
+      const unitData = {
+        community_id: parseInt(form.community_id),
+        property_id: parseInt(form.property_id),
+        unit_number: form.unit_number,
+        customer_name: form.customer_name || null,
+        floor: form.floor || null,
+        unit_type: form.unit_type || null,
+        status: form.status || "unsold",
+        meter_number: form.meter_number || null,
+        description: form.description || null
+      };
 
-      // Get existing units from localStorage
-      const existingUnits = JSON.parse(localStorage.getItem("units") || "[]");
+      // Make API call
+      const response = await fetch(`${baseURL}/api/units/${form.unit_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(unitData),
+      });
 
-      // Find the unit to update
-      const unitIndex = existingUnits.findIndex(u => u.id === form.id);
+      const data = await response.json();
 
-      if (unitIndex !== -1) {
-        // Update existing unit
-        existingUnits[unitIndex] = {
-          ...existingUnits[unitIndex],
-          community_name: form.communityName,
-          property_name: form.propertyName,
-          unit_number: form.unitNumber,
-          customer_name: form.customerName || "Customer Not Assigned",
-          floors: form.floors || "Ground Floor",
-          unit_type: form.unitType || "1 BHK",
-          occupancy_status: form.occupancyStatus,
-          property_id: parseInt(form.propertyId),
-          community_id: parseInt(form.communityId),
-          meter_number: form.meterNumber
-        };
+      if (response.ok) {
+        toast.success("Success", "Unit updated successfully!");
 
-        // Save back to localStorage
-        localStorage.setItem("units", JSON.stringify(existingUnits));
-
-        toast.warn("Success", "Unit updated successfully!");
-
-        // Call success callback and close
         setTimeout(() => {
-          if (onSuccess) onSuccess();
+          if (onSuccess) onSuccess(data);
           if (isModal && onClose) onClose();
           if (!isModal) navigate("/community-management/units", { replace: true });
-        }, 2000);
+        }, 1000);
       } else {
-        throw new Error("Unit not found");
+        throw new Error(data.message || "Failed to update unit");
       }
-
     } catch (error) {
       console.error("Update error:", error);
       toast.error("Error", error.message || "Failed to update unit");
@@ -229,18 +242,22 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
 
   if (loading) {
     return (
-      <div className="p-6 text-center">
-        <p style={{ color: themeUtils.getTextColor(true) }}>
-          Loading unit details...
-        </p>
+      <div className="p-6 flex items-center justify-center h-96">
+        <div className="text-center">
+          <div
+            className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto"
+            style={{ borderColor: "#6366f1" }}
+          ></div>
+          <p className="mt-4" style={{ color: themeUtils.getTextColor(true) }}>
+            Loading unit details...
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className={isModal ? "space-y-6" : "space-y-6 py-2 px-4"}>
-      {/* No AlertComponent needed with global toast */}
-
       {/* Header - Hide in Modal */}
       {!isModal && (
         <CardHeader>
@@ -268,10 +285,10 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                 className="block text-sm font-medium mb-1"
                 style={{ color: themeUtils.getTextColor(false) }}
               >
-                Community Name
+                Community Name *
               </label>
               <select
-                value={form.communityId}
+                value={form.community_id}
                 onChange={(e) => handleCommunityChange(e.target.value)}
                 className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                 style={{
@@ -279,7 +296,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                   borderColor: themeUtils.getBorderColor(),
                   color: themeUtils.getTextColor(true),
                 }}
-                disabled={saving}
+                disabled={saving || loadingCommunities}
               >
                 <option value="">Select Community</option>
                 {communities.map((c) => (
@@ -288,6 +305,11 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                   </option>
                 ))}
               </select>
+              {loadingCommunities && (
+                <p className="text-xs mt-1" style={{ color: themeUtils.getTextColor(false) }}>
+                  Loading communities...
+                </p>
+              )}
             </div>
 
             {/* Property Name */}
@@ -296,10 +318,10 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                 className="block text-sm font-medium mb-1"
                 style={{ color: themeUtils.getTextColor(false) }}
               >
-                Property Name
+                Property Name *
               </label>
               <select
-                value={form.propertyId}
+                value={form.property_id}
                 onChange={(e) => handlePropertyChange(e.target.value)}
                 className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                 style={{
@@ -307,7 +329,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                   borderColor: themeUtils.getBorderColor(),
                   color: themeUtils.getTextColor(true),
                 }}
-                disabled={!form.communityId || saving}
+                disabled={!form.community_id || saving || loadingProperties}
               >
                 <option value="">Select Property</option>
                 {properties.map((p) => (
@@ -316,6 +338,11 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                   </option>
                 ))}
               </select>
+              {loadingProperties && (
+                <p className="text-xs mt-1" style={{ color: themeUtils.getTextColor(false) }}>
+                  Loading properties...
+                </p>
+              )}
             </div>
 
             {/* Unit Number */}
@@ -324,13 +351,13 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                 className="block text-sm font-medium mb-1"
                 style={{ color: themeUtils.getTextColor(false) }}
               >
-                Unit Number
+                Unit Number *
               </label>
               <input
                 type="text"
-                value={form.unitNumber}
+                value={form.unit_number}
                 onChange={(e) =>
-                  setForm({ ...form, unitNumber: e.target.value })
+                  setForm({ ...form, unit_number: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                 style={{
@@ -353,9 +380,9 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
               </label>
               <input
                 type="text"
-                value={form.customerName}
+                value={form.customer_name}
                 onChange={(e) =>
-                  setForm({ ...form, customerName: e.target.value })
+                  setForm({ ...form, customer_name: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                 style={{
@@ -368,7 +395,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
               />
             </div>
 
-            {/* Floors */}
+            {/* Floor */}
             <div>
               <label
                 className="block text-sm font-medium mb-1"
@@ -377,8 +404,8 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                 Floor
               </label>
               <select
-                value={form.floors}
-                onChange={(e) => setForm({ ...form, floors: e.target.value })}
+                value={form.floor}
+                onChange={(e) => setForm({ ...form, floor: e.target.value })}
                 className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                 style={{
                   backgroundColor: themeUtils.getBgColor("input"),
@@ -421,8 +448,8 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                 Unit Type
               </label>
               <select
-                value={form.unitType}
-                onChange={(e) => setForm({ ...form, unitType: e.target.value })}
+                value={form.unit_type}
+                onChange={(e) => setForm({ ...form, unit_type: e.target.value })}
                 className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                 style={{
                   backgroundColor: themeUtils.getBgColor("input"),
@@ -442,18 +469,18 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
               </select>
             </div>
 
-            {/* Occupancy Status */}
+            {/* Status */}
             <div>
               <label
                 className="block text-sm font-medium mb-1"
                 style={{ color: themeUtils.getTextColor(false) }}
               >
-                Occupancy Status
+                Status
               </label>
               <select
-                value={form.occupancyStatus}
+                value={form.status}
                 onChange={(e) =>
-                  setForm({ ...form, occupancyStatus: e.target.value })
+                  setForm({ ...form, status: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                 style={{
@@ -463,9 +490,9 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                 }}
                 disabled={saving}
               >
-                <option value="VACANT">Vacant</option>
-                <option value="OCCUPIED">Occupied</option>
-                <option value="MAINTENANCE">Maintenance</option>
+                <option value="unsold">Unsold</option>
+                <option value="sold">Sold</option>
+                <option value="reserved">Reserved</option>
               </select>
             </div>
 
@@ -479,9 +506,9 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
               </label>
               <input
                 type="text"
-                value={form.meterNumber}
+                value={form.meter_number}
                 onChange={(e) =>
-                  setForm({ ...form, meterNumber: e.target.value })
+                  setForm({ ...form, meter_number: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                 style={{
@@ -490,6 +517,29 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
                   color: themeUtils.getTextColor(true),
                 }}
                 placeholder="Enter meter number"
+                disabled={saving}
+              />
+            </div>
+
+            {/* Description */}
+            <div className="md:col-span-2">
+              <label
+                className="block text-sm font-medium mb-1"
+                style={{ color: themeUtils.getTextColor(false) }}
+              >
+                Description
+              </label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
+                style={{
+                  backgroundColor: themeUtils.getBgColor("input"),
+                  borderColor: themeUtils.getBorderColor(),
+                  color: themeUtils.getTextColor(true),
+                }}
+                rows="3"
+                placeholder="Enter additional details"
                 disabled={saving}
               />
             </div>
@@ -512,7 +562,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
               variant="primary"
               onClick={handleSubmit}
               loading={saving}
-              disabled={saving}
+              disabled={saving || !form.community_id || !form.property_id || !form.unit_number}
             >
               Update Unit
             </Button>
@@ -523,4 +573,4 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess }) => {
   );
 };
 
-export default EditUnit
+export default EditUnit;

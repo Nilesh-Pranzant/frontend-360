@@ -10,8 +10,9 @@ import Card, {
   CardContent,
 } from "../../../../ui/Common/Card";
 import { RiArrowGoBackFill } from "react-icons/ri";
+import { API_URL_UNIT, API_URL_COMMUNITY, API_URL_PROPERTY } from "../../../../../config";
 
-const AddUnit = ({ onClose, onSuccess }) => {
+const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
   const { themeUtils } = useTheme();
   const navigate = useNavigate();
   const toast = useToast();
@@ -20,118 +21,120 @@ const AddUnit = ({ onClose, onSuccess }) => {
   const isModal = !!onClose;
 
   const [loading, setLoading] = useState(false);
+  const [loadingCommunities, setLoadingCommunities] = useState(true);
+  const [loadingProperties, setLoadingProperties] = useState(false);
 
-  // Static data for dropdowns
+  // API data
   const [communities, setCommunities] = useState([]);
   const [properties, setProperties] = useState([]);
 
+  // Base URL for API
+  const baseURL = propBaseURL || API_URL_UNIT || "http://192.168.1.39:5000";
+  const communityBaseURL = API_URL_COMMUNITY || "http://192.168.1.39:5000";
+  const propertyBaseURL = API_URL_PROPERTY || "http://192.168.1.39:5000";
+
   const [form, setForm] = useState({
-    communityId: "",
-    communityName: "",
-    propertyId: "",
-    propertyName: "",
-    unitNumber: "",
-    customerName: "",
-    floors: "",
-    unitType: "",
-    occupancyStatus: "VACANT",
+    community_id: "",
+    community_name: "",
+    property_id: "",
+    property_name: "",
+    unit_number: "",
+    customer_name: "",
+    floor: "",
+    unit_type: "",
+    status: "unsold",
+    meter_number: "",
+    description: ""
   });
 
-  // Static communities data
+  // Fetch communities from API
   useEffect(() => {
-    // Static communities data
-    const dummyCommunities = [
-      { community_id: 1001, community_name: "Sunset Villas" },
-      { community_id: 1002, community_name: "Oakwood Heights" },
-      { community_id: 1003, community_name: "Riverside Apartments" },
-      { community_id: 1004, community_name: "Meadowbrook Estates" },
-      { community_id: 1005, community_name: "Palm Gardens" },
-      { community_id: 1006, community_name: "Harbor View" },
-    ];
-    setCommunities(dummyCommunities);
-  }, []);
+    const fetchCommunities = async () => {
+      try {
+        setLoadingCommunities(true);
+        const response = await fetch(`${communityBaseURL}/api/communities`);
+        const data = await response.json();
 
-  // Static properties data based on selected community
-  useEffect(() => {
-    if (!form.communityId) {
-      setProperties([]);
-      setForm(prev => ({ ...prev, propertyId: "", propertyName: "" }));
-      return;
-    }
-
-    // Static properties data mapped to communities
-    const dummyProperties = {
-      1001: [ // Sunset Villas
-        { property_id: 101, property_name: "Building A", community_id: 1001 },
-        { property_id: 102, property_name: "Building B", community_id: 1001 },
-        { property_id: 103, property_name: "Building C", community_id: 1001 },
-      ],
-      1002: [ // Oakwood Heights
-        { property_id: 201, property_name: "Tower 1", community_id: 1002 },
-        { property_id: 202, property_name: "Tower 2", community_id: 1002 },
-        { property_id: 203, property_name: "Tower 3", community_id: 1002 },
-      ],
-      1003: [ // Riverside Apartments
-        { property_id: 301, property_name: "Building C", community_id: 1003 },
-        { property_id: 302, property_name: "Building D", community_id: 1003 },
-        { property_id: 303, property_name: "Building E", community_id: 1003 },
-      ],
-      1004: [ // Meadowbrook Estates
-        { property_id: 401, property_name: "Building E", community_id: 1004 },
-        { property_id: 402, property_name: "Building F", community_id: 1004 },
-        { property_id: 403, property_name: "Building G", community_id: 1004 },
-      ],
-      1005: [ // Palm Gardens
-        { property_id: 501, property_name: "Building G", community_id: 1005 },
-        { property_id: 502, property_name: "Building H", community_id: 1005 },
-        { property_id: 503, property_name: "Building I", community_id: 1005 },
-      ],
-      1006: [ // Harbor View
-        { property_id: 601, property_name: "Tower A", community_id: 1006 },
-        { property_id: 602, property_name: "Tower B", community_id: 1006 },
-        { property_id: 603, property_name: "Tower C", community_id: 1006 },
-      ],
+        if (response.ok) {
+          setCommunities(data);
+        } else {
+          console.error("Error fetching communities:", data);
+          toast.error("Error", "Failed to load communities");
+        }
+      } catch (error) {
+        console.error("Error fetching communities:", error);
+        toast.error("Error", "Failed to load communities. Please check your connection.");
+      } finally {
+        setLoadingCommunities(false);
+      }
     };
 
-    // Convert communityId to number for comparison
-    const communityIdNum = parseInt(form.communityId);
-    setProperties(dummyProperties[communityIdNum] || []);
-    setForm(prev => ({ ...prev, propertyId: "", propertyName: "" }));
-  }, [form.communityId]);
+    fetchCommunities();
+  }, [communityBaseURL]);
 
-  // Update property name when property ID changes
+  // Fetch properties when community is selected
   useEffect(() => {
-    if (form.propertyId) {
-      const selectedProperty = properties.find(p => p.property_id === parseInt(form.propertyId));
-      if (selectedProperty) {
-        setForm(prev => ({ ...prev, propertyName: selectedProperty.property_name }));
+    const fetchProperties = async () => {
+      if (!form.community_id) {
+        setProperties([]);
+        return;
       }
-    }
-  }, [form.propertyId, properties]);
+
+      try {
+        setLoadingProperties(true);
+        const response = await fetch(`${propertyBaseURL}/api/properties?community_id=${form.community_id}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          setProperties(data);
+        } else {
+          console.error("Error fetching properties:", data);
+          toast.error("Error", "Failed to load properties");
+        }
+      } catch (error) {
+        console.error("Error fetching properties:", error);
+        toast.error("Error", "Failed to load properties. Please check your connection.");
+      } finally {
+        setLoadingProperties(false);
+      }
+    };
+
+    fetchProperties();
+  }, [form.community_id, propertyBaseURL]);
 
   // Update community name when community ID changes
   useEffect(() => {
-    if (form.communityId) {
-      const selectedCommunity = communities.find(c => c.community_id === parseInt(form.communityId));
+    if (form.community_id) {
+      const selectedCommunity = communities.find(c => c.community_id === parseInt(form.community_id));
       if (selectedCommunity) {
-        setForm(prev => ({ ...prev, communityName: selectedCommunity.community_name }));
+        setForm(prev => ({ ...prev, community_name: selectedCommunity.community_name }));
       }
     }
-  }, [form.communityId, communities]);
+  }, [form.community_id, communities]);
+
+  // Update property name when property ID changes
+  useEffect(() => {
+    if (form.property_id) {
+      const selectedProperty = properties.find(p => p.property_id === parseInt(form.property_id));
+      if (selectedProperty) {
+        setForm(prev => ({ ...prev, property_name: selectedProperty.property_name }));
+      }
+    }
+  }, [form.property_id, properties]);
 
   const handleSubmit = async () => {
-    // Validation - only community, property, and unit number are mandatory
-    if (!form.communityId) {
+    // Validation - required fields
+    if (!form.community_id) {
       toast.error("Validation Error", "Please select a community.");
       return;
     }
 
-    if (!form.propertyId) {
+    if (!form.property_id) {
       toast.error("Validation Error", "Please select a property.");
       return;
     }
 
-    if (!form.unitNumber) {
+    if (!form.unit_number) {
       toast.error("Validation Error", "Please enter unit number.");
       return;
     }
@@ -139,45 +142,41 @@ const AddUnit = ({ onClose, onSuccess }) => {
     try {
       setLoading(true);
 
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Set default values for optional fields if not provided
-      const floorsValue = form.floors || "Ground Floor";
-      const unitTypeValue = form.unitType || "1 BHK";
-      const customerNameValue = form.customerName || "Customer Not Assigned";
-
-      // Create new unit object with all fields
-      const newUnit = {
-        id: Math.floor(Math.random() * 1000) + 100, // Generate random ID
-        community_name: form.communityName,
-        property_name: form.propertyName,
-        unit_number: form.unitNumber,
-        customer_name: customerNameValue,
-        floors: floorsValue,
-        unit_type: unitTypeValue,
-        occupancy_status: form.occupancyStatus,
-        property_id: parseInt(form.propertyId),
-        community_id: parseInt(form.communityId),
-        is_active: true,
-        meter_number: "Not Assigned"
+      // Prepare data for API
+      const unitData = {
+        community_id: parseInt(form.community_id),
+        property_id: parseInt(form.property_id),
+        unit_number: form.unit_number,
+        customer_name: form.customer_name || null,
+        floor: form.floor || null,
+        unit_type: form.unit_type || null,
+        status: form.status || "unsold",
+        meter_number: form.meter_number || null,
+        description: form.description || null
       };
 
-      // Store in localStorage to persist across sessions
-      const existingUnits = JSON.parse(localStorage.getItem("units") || "[]");
-      existingUnits.push(newUnit);
-      localStorage.setItem("units", JSON.stringify(existingUnits));
+      // Make API call
+      const response = await fetch(`${baseURL}/api/units`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(unitData),
+      });
 
-      // Show success alert
-      toast.success("Success", "Unit added successfully!");
+      const data = await response.json();
 
-      // Call success callback and close
-      setTimeout(() => {
-        if (onSuccess) onSuccess(newUnit);
-        if (isModal && onClose) onClose();
-        if (!isModal) navigate("/community-management/units", { replace: true });
-      }, 2000);
+      if (response.ok) {
+        toast.success("Success", "Unit added successfully!");
 
+        setTimeout(() => {
+          if (onSuccess) onSuccess(data);
+          if (isModal && onClose) onClose();
+          if (!isModal) navigate("/community-management/units", { replace: true });
+        }, 1000);
+      } else {
+        throw new Error(data.message || "Failed to add unit");
+      }
     } catch (error) {
       console.error(error);
       toast.error("Error", error.message || "Something went wrong");
@@ -196,8 +195,6 @@ const AddUnit = ({ onClose, onSuccess }) => {
 
   return (
     <div className={isModal ? "space-y-6" : "space-y-6 py-2 px-4"}>
-      {/* No AlertComponent needed with global toast */}
-
       {/* Header - Hide in Modal */}
       {!isModal && (
         <CardHeader>
@@ -226,14 +223,13 @@ const AddUnit = ({ onClose, onSuccess }) => {
                   Community Name *
                 </label>
                 <select
-                  value={form.communityId}
+                  value={form.community_id}
                   onChange={(e) => {
-                    const communityId = e.target.value;
                     setForm({
                       ...form,
-                      communityId,
-                      propertyId: "",
-                      propertyName: "",
+                      community_id: e.target.value,
+                      property_id: "",
+                      property_name: "",
                     });
                   }}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -242,6 +238,7 @@ const AddUnit = ({ onClose, onSuccess }) => {
                     color: themeUtils.getTextColor(true),
                     borderColor: themeUtils.getBorderColor(),
                   }}
+                  disabled={loading || loadingCommunities}
                 >
                   <option value="">Select Community</option>
                   {communities.map((c) => (
@@ -250,6 +247,11 @@ const AddUnit = ({ onClose, onSuccess }) => {
                     </option>
                   ))}
                 </select>
+                {loadingCommunities && (
+                  <p className="text-xs mt-1" style={{ color: themeUtils.getTextColor(false) }}>
+                    Loading communities...
+                  </p>
+                )}
               </div>
 
               {/* Property */}
@@ -258,15 +260,15 @@ const AddUnit = ({ onClose, onSuccess }) => {
                   Property Name *
                 </label>
                 <select
-                  value={form.propertyId}
-                  onChange={(e) => setForm({ ...form, propertyId: e.target.value })}
+                  value={form.property_id}
+                  onChange={(e) => setForm({ ...form, property_id: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     color: themeUtils.getTextColor(true),
                     borderColor: themeUtils.getBorderColor(),
                   }}
-                  disabled={!form.communityId}
+                  disabled={!form.community_id || loading || loadingProperties}
                 >
                   <option value="">Select Property</option>
                   {properties.map((p) => (
@@ -275,6 +277,11 @@ const AddUnit = ({ onClose, onSuccess }) => {
                     </option>
                   ))}
                 </select>
+                {loadingProperties && (
+                  <p className="text-xs mt-1" style={{ color: themeUtils.getTextColor(false) }}>
+                    Loading properties...
+                  </p>
+                )}
               </div>
 
               {/* Unit Number */}
@@ -284,8 +291,8 @@ const AddUnit = ({ onClose, onSuccess }) => {
                 </label>
                 <input
                   type="text"
-                  value={form.unitNumber}
-                  onChange={(e) => setForm({ ...form, unitNumber: e.target.value })}
+                  value={form.unit_number}
+                  onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
@@ -293,6 +300,7 @@ const AddUnit = ({ onClose, onSuccess }) => {
                     borderColor: themeUtils.getBorderColor(),
                   }}
                   placeholder="e.g., 101"
+                  disabled={loading}
                 />
               </div>
 
@@ -303,8 +311,8 @@ const AddUnit = ({ onClose, onSuccess }) => {
                 </label>
                 <input
                   type="text"
-                  value={form.customerName}
-                  onChange={(e) => setForm({ ...form, customerName: e.target.value })}
+                  value={form.customer_name}
+                  onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
@@ -312,23 +320,25 @@ const AddUnit = ({ onClose, onSuccess }) => {
                     borderColor: themeUtils.getBorderColor(),
                   }}
                   placeholder="Enter customer name (optional)"
+                  disabled={loading}
                 />
               </div>
 
-              {/* Floors */}
+              {/* Floor */}
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Floor
                 </label>
                 <select
-                  value={form.floors}
-                  onChange={(e) => setForm({ ...form, floors: e.target.value })}
+                  value={form.floor}
+                  onChange={(e) => setForm({ ...form, floor: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     color: themeUtils.getTextColor(true),
                     borderColor: themeUtils.getBorderColor(),
                   }}
+                  disabled={loading}
                 >
                   <option value="">Select Floor (optional)</option>
                   <option value="Ground Floor">Ground Floor</option>
@@ -361,14 +371,15 @@ const AddUnit = ({ onClose, onSuccess }) => {
                   Unit Type
                 </label>
                 <select
-                  value={form.unitType}
-                  onChange={(e) => setForm({ ...form, unitType: e.target.value })}
+                  value={form.unit_type}
+                  onChange={(e) => setForm({ ...form, unit_type: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     color: themeUtils.getTextColor(true),
                     borderColor: themeUtils.getBorderColor(),
                   }}
+                  disabled={loading}
                 >
                   <option value="">Select Unit Type (optional)</option>
                   <option value="Studio">Studio</option>
@@ -381,25 +392,66 @@ const AddUnit = ({ onClose, onSuccess }) => {
                 </select>
               </div>
 
-              {/* Occupancy Status */}
+              {/* Status */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Occupancy Status
+                  Status
                 </label>
                 <select
-                  value={form.occupancyStatus}
-                  onChange={(e) => setForm({ ...form, occupancyStatus: e.target.value })}
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     color: themeUtils.getTextColor(true),
                     borderColor: themeUtils.getBorderColor(),
                   }}
+                  disabled={loading}
                 >
-                  <option value="VACANT">Vacant</option>
-                  <option value="OCCUPIED">Occupied</option>
-                  <option value="MAINTENANCE">Maintenance</option>
+                  <option value="unsold">Unsold</option>
+                  <option value="sold">Sold</option>
+                  <option value="reserved">Reserved</option>
                 </select>
+              </div>
+
+              {/* Meter Number */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Meter Number
+                </label>
+                <input
+                  type="text"
+                  value={form.meter_number}
+                  onChange={(e) => setForm({ ...form, meter_number: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{
+                    backgroundColor: themeUtils.getBgColor("input"),
+                    color: themeUtils.getTextColor(true),
+                    borderColor: themeUtils.getBorderColor(),
+                  }}
+                  placeholder="Enter meter number (optional)"
+                  disabled={loading}
+                />
+              </div>
+
+              {/* Description */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{
+                    backgroundColor: themeUtils.getBgColor("input"),
+                    color: themeUtils.getTextColor(true),
+                    borderColor: themeUtils.getBorderColor(),
+                  }}
+                  rows="3"
+                  placeholder="Enter additional details (optional)"
+                  disabled={loading}
+                />
               </div>
             </div>
 
@@ -416,7 +468,7 @@ const AddUnit = ({ onClose, onSuccess }) => {
                 variant="primary"
                 onClick={handleSubmit}
                 loading={loading}
-                disabled={loading}
+                disabled={loading || !form.community_id || !form.property_id || !form.unit_number}
               >
                 Submit
               </Button>

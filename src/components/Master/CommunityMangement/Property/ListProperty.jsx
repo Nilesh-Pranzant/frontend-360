@@ -1,6 +1,6 @@
 // pages/ListProperty/ListProperty.js
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, RefreshCw } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
 import { useToast } from "../../../../ui/common/CostumeTost";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
@@ -18,6 +18,7 @@ import Card, {
   CardContent,
 } from "../../../../ui/Common/Card";
 import Pagination from "../../../../ui/Common/Pagination";
+import { API_URL_PROPERTY } from "../../../../../config";
 
 const ListProperty = () => {
   const { theme, themeUtils } = useTheme();
@@ -37,287 +38,81 @@ const ListProperty = () => {
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
 
-  /* ================= FETCH PROPERTIES ================= */
-  useEffect(() => {
-    fetchProperties();
-  }, []);
+  // Base URL for API
+  const baseURL = API_URL_PROPERTY || "http://192.168.1.39:5000";
 
+  /* ================= FETCH PROPERTIES ================= */
   const fetchProperties = async () => {
     try {
       setLoading(true);
+      
+      const url = search 
+        ? `${baseURL}/api/properties?search=${encodeURIComponent(search)}`
+        : `${baseURL}/api/properties`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
 
-      // Static dummy data for properties with location fields
-      const dummyProperties = [
-        {
-          id: 101,
-          property_name: "Building A",
-          community_name: "Sunset Villas",
-          total_units: 45,
-          subscription: "Premium Plan",
-          community_id: 1001,
-          city: "Dubai",
-          country: "UAE",
-          location: "Al Furjan",
-          total_floors: 5,
-          address_line1: "Al Furjan",
-          address_line2: "Near Ibn Battuta",
-          zip_code: "12345"
-        },
-        {
-          id: 102,
-          property_name: "Building B",
-          community_name: "Sunset Villas",
-          total_units: 38,
-          subscription: "Basic Plan",
-          community_id: 1001,
-          city: "Dubai",
-          country: "UAE",
-          location: "Al Furjan",
-          total_floors: 4,
-          address_line1: "Al Furjan",
-          address_line2: "",
-          zip_code: "12345"
-        },
-        {
-          id: 103,
-          property_name: "Building C",
-          community_name: "Sunset Villas",
-          total_units: 42,
-          subscription: "Premium Plan",
-          community_id: 1001,
-          city: "Dubai",
-          country: "UAE",
-          location: "Al Furjan",
-          total_floors: 5,
-          address_line1: "Al Furjan",
-          address_line2: "",
-          zip_code: "12345"
-        },
-        {
-          id: 201,
-          property_name: "Tower 1",
-          community_name: "Oakwood Heights",
-          total_units: 72,
-          subscription: "Enterprise Plan",
-          community_id: 1002,
-          city: "Dubai",
-          country: "UAE",
-          location: "Dubai Marina",
-          total_floors: 12,
-          address_line1: "Dubai Marina",
-          address_line2: "",
-          zip_code: "12346"
-        },
-        {
-          id: 202,
-          property_name: "Tower 2",
-          community_name: "Oakwood Heights",
-          total_units: 68,
-          subscription: "Enterprise Plan",
-          community_id: 1002,
-          city: "Dubai",
-          country: "UAE",
-          location: "Dubai Marina",
-          total_floors: 12,
-          address_line1: "Dubai Marina",
-          address_line2: "",
-          zip_code: "12346"
-        },
-        {
-          id: 203,
-          property_name: "Tower 3",
-          community_name: "Oakwood Heights",
-          total_units: 70,
-          subscription: "Premium Plan",
-          community_id: 1002,
-          city: "Dubai",
-          country: "UAE",
-          location: "Dubai Marina",
-          total_floors: 10,
-          address_line1: "Dubai Marina",
-          address_line2: "",
-          zip_code: "12346"
-        },
-        {
-          id: 301,
-          property_name: "Building C",
-          community_name: "Riverside Apartments",
-          total_units: 56,
-          subscription: "Premium Plan",
-          community_id: 1003,
-          city: "Dubai",
-          country: "UAE",
-          location: "Business Bay",
-          total_floors: 8,
-          address_line1: "Business Bay",
-          address_line2: "",
-          zip_code: "12347"
-        },
-        {
-          id: 302,
-          property_name: "Building D",
-          community_name: "Riverside Apartments",
-          total_units: 48,
-          subscription: "Basic Plan",
-          community_id: 1003,
-          city: "Dubai",
-          country: "UAE",
-          location: "Business Bay",
-          total_floors: 6,
-          address_line1: "Business Bay",
-          address_line2: "",
-          zip_code: "12347"
-        },
-        {
-          id: 303,
-          property_name: "Building E",
-          community_name: "Riverside Apartments",
-          total_units: 52,
-          subscription: "Premium Plan",
-          community_id: 1003,
-          city: "Dubai",
-          country: "UAE",
-          location: "Business Bay",
-          total_floors: 7,
-          address_line1: "Business Bay",
-          address_line2: "",
-          zip_code: "12347"
-        },
-        {
-          id: 401,
-          property_name: "Building E",
-          community_name: "Meadowbrook Estates",
-          total_units: 48,
-          subscription: "Basic Plan",
-          community_id: 1004,
-          city: "Dubai",
-          country: "UAE",
-          location: "Jumeirah Village Circle",
-          total_floors: 6,
-          address_line1: "Jumeirah Village Circle",
-          address_line2: "",
-          zip_code: "12348"
-        },
-        {
-          id: 402,
-          property_name: "Building F",
-          community_name: "Meadowbrook Estates",
-          total_units: 54,
-          subscription: "Premium Plan",
-          community_id: 1004,
-          city: "Dubai",
-          country: "UAE",
-          location: "Jumeirah Village Circle",
-          total_floors: 7,
-          address_line1: "Jumeirah Village Circle",
-          address_line2: "",
-          zip_code: "12348"
-        },
-        {
-          id: 403,
-          property_name: "Building G",
-          community_name: "Meadowbrook Estates",
-          total_units: 42,
-          subscription: "Basic Plan",
-          community_id: 1004,
-          city: "Dubai",
-          country: "UAE",
-          location: "Jumeirah Village Circle",
-          total_floors: 5,
-          address_line1: "Jumeirah Village Circle",
-          address_line2: "",
-          zip_code: "12348"
-        },
-        {
-          id: 501,
-          property_name: "Building A",
-          community_name: "Palm Gardens",
-          total_units: 60,
-          subscription: "Premium Plan",
-          community_id: 1005,
-          city: "Abu Dhabi",
-          country: "UAE",
-          location: "Al Reem Island",
-          total_floors: 15,
-          address_line1: "Al Reem Island",
-          address_line2: "",
-          zip_code: "12349"
-        },
-        {
-          id: 502,
-          property_name: "Building B",
-          community_name: "Palm Gardens",
-          total_units: 55,
-          subscription: "Basic Plan",
-          community_id: 1005,
-          city: "Abu Dhabi",
-          country: "UAE",
-          location: "Al Reem Island",
-          total_floors: 12,
-          address_line1: "Al Reem Island",
-          address_line2: "",
-          zip_code: "12349"
-        },
-        {
-          id: 601,
-          property_name: "Tower A",
-          community_name: "Harbor View",
-          total_units: 80,
-          subscription: "Enterprise Plan",
-          community_id: 1006,
-          city: "Sharjah",
-          country: "UAE",
-          location: "Al Majaz",
-          total_floors: 20,
-          address_line1: "Al Majaz",
-          address_line2: "",
-          zip_code: "12350"
-        }
-      ];
+      if (response.ok) {
+        // Normalize data for frontend UI
+        const normalized = data.map((p) => ({
+          id: p.property_id,
+          property_id: p.property_id,
+          PropertyName: p.property_name || "-",
+          property_name: p.property_name || "-",
+          communityName: p.community_name || "-",
+          community_id: p.community_id,
+          totalUnits: p.total_units || 0,
+          total_units: p.total_units || 0,
+          subscription: p.subscription || "-",
+          city: p.city || "-",
+          country: p.country || "-",
+          location: p.location || "-",
+          totalFloors: p.total_floors || 0,
+          total_floors: p.total_floors || 0,
+          addressLine1: p.address_line1 || "",
+          address_line1: p.address_line1 || "",
+          addressLine2: p.address_line2 || "",
+          address_line2: p.address_line2 || "",
+          zipCode: p.zip_code || "",
+          zip_code: p.zip_code || "",
+          property_image: p.property_image || null,
+          description: p.description || "",
+          is_active: p.is_active,
+        }));
 
-      // Normalize data for frontend UI
-      const normalized = dummyProperties.map((p) => ({
-        id: p.id,
-        PropertyName: p.property_name || "-",
-        communityName: p.community_name || "-",
-        totalUnits: p.total_units || "-",
-        subscription: p.subscription || "-",
-        community_id: p.community_id,
-        city: p.city || "-",
-        country: p.country || "-",
-        location: p.location || "-",
-        totalFloors: p.total_floors,
-        addressLine1: p.address_line1,
-        addressLine2: p.address_line2,
-        zipCode: p.zip_code,
-      }));
-
-      setProperties(normalized);
+        setProperties(normalized);
+      } else {
+        console.error("Error fetching properties:", data);
+        toast.error("Error", "Failed to fetch properties. Please try again.");
+      }
     } catch (error) {
       console.error("Error loading properties:", error);
-      toast.error("Error", "Failed to load properties.");
+      toast.error("Error", "Failed to load properties. Please check your connection.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Initial fetch and fetch on search change
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchProperties();
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [search]);
+
   /* ================= FILTER + PAGINATION ================= */
-  const filteredProperty = properties.filter(
-    (p) =>
-      (p.communityName || "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.PropertyName || "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.location || "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.city || "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.country || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredProperty = properties; // Search is handled by API
 
   const paginatedProperty =
     perPage === "All" || perPage === Infinity || perPage <= 0
       ? filteredProperty
       : filteredProperty.slice(
-        (currentPage - 1) * perPage,
-        currentPage * perPage
-      );
+          (currentPage - 1) * perPage,
+          currentPage * perPage
+        );
 
   const totalPages =
     perPage === "All" || perPage === Infinity || perPage <= 0
@@ -347,22 +142,33 @@ const ListProperty = () => {
     deleteInProgress.current = true;
 
     confirmDialog({
-      message: "Do you want to delete this Property?",
-      header: "Are you sure?",
+      message: "Do you want to delete this Property? This action cannot be undone.",
+      header: "Delete Confirmation",
       icon: "pi pi-exclamation-triangle",
       acceptClassName: "p-button-danger",
-      acceptLabel: "Yes",
-      rejectLabel: "No",
+      acceptLabel: "Yes, Delete",
+      rejectLabel: "Cancel",
       accept: async () => {
         try {
-          // Simulate successful deletion
-          setProperties((prev) => prev.filter((p) => p.id !== id));
-          toast.error("Deleted", "Property deleted successfully");
+          const response = await fetch(`${baseURL}/api/properties/${id}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          const result = await response.json();
+          
+          if (response.ok) {
+            setProperties((prev) => prev.filter((p) => p.id !== id));
+            toast.error("Deleted!", "Property deleted successfully.");
+          } else {
+            throw new Error(result.message || "Failed to delete");
+          }
         } catch (err) {
           console.error("Delete Property Error:", err);
-          toast.error("Error", "Something went wrong");
+          toast.error("Error", err.message || "Failed to delete property. Please try again.");
         } finally {
-          // Reset the flag after a delay
           setTimeout(() => {
             deleteInProgress.current = false;
           }, 2000);
@@ -377,6 +183,23 @@ const ListProperty = () => {
     });
   };
 
+  const handleRefresh = async () => {
+    await fetchProperties();
+    toast.success("Refreshed", "Property list updated successfully!");
+  };
+
+  const handleAddSuccess = () => {
+    fetchProperties();
+    setIsAddDrawerOpen(false);
+    toast.success("Success", "Property added successfully!");
+  };
+
+  const handleEditSuccess = () => {
+    fetchProperties();
+    setIsEditDrawerOpen(false);
+    toast.success("Success", "Property updated successfully!");
+  };
+
   const exportCSV = () => {
     const headers = [
       "Sr. No",
@@ -385,6 +208,7 @@ const ListProperty = () => {
       "Location",
       "City",
       "Country",
+      "Total Floors",
       "Total Units",
     ];
 
@@ -398,7 +222,8 @@ const ListProperty = () => {
           `"${p.location?.replace(/"/g, '""') || ""}"`,
           `"${p.city?.replace(/"/g, '""') || ""}"`,
           `"${p.country?.replace(/"/g, '""') || ""}"`,
-          p.totalUnits || "",
+          p.totalFloors || 0,
+          p.totalUnits || 0,
         ].join(",")
       ),
     ].join("\n");
@@ -412,10 +237,10 @@ const ListProperty = () => {
     toast.success("Export Successful", "Properties exported to CSV successfully!");
   };
 
-  const truncateText = (text) => {
+  const truncateText = (text, maxLength = 20) => {
     if (typeof text !== "string" || text == null) return text || "-";
-    if (text.length <= 20) return text;
-    return text.substring(0, 20) + "...";
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
   };
 
   /* ================= TABLE ================= */
@@ -426,6 +251,7 @@ const ListProperty = () => {
     "Location",
     "City",
     "Country",
+    "Total Floors",
     "Total Units",
     "Actions",
   ];
@@ -485,7 +311,14 @@ const ListProperty = () => {
         className="px-4 py-2 text-center text-sm"
         style={{ color: themeUtils.getTextColor(true) }}
       >
-        {property.totalUnits || "-"}
+        {property.totalFloors || 0}
+      </td>
+
+      <td
+        className="px-4 py-2 text-center text-sm"
+        style={{ color: themeUtils.getTextColor(true) }}
+      >
+        {property.totalUnits || 0}
       </td>
 
       <td className="px-4 py-2 text-center">
@@ -505,7 +338,6 @@ const ListProperty = () => {
   return (
     <div className="space-y-4">
       <ConfirmDialog />
-
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 py-2">
         <div className="space-y-1">
@@ -539,6 +371,16 @@ const ListProperty = () => {
             </Button>
 
             <Button
+              variant="secondary"
+              icon={RefreshCw}
+              onClick={handleRefresh}
+              className="whitespace-nowrap shrink-0"
+              loading={loading}
+            >
+              Refresh
+            </Button>
+
+            <Button
               variant="success"
               icon={Download}
               onClick={exportCSV}
@@ -550,7 +392,6 @@ const ListProperty = () => {
         </div>
       </div>
 
-
       <CardContent>
         <div className="overflow-x-auto hide-scrollbar px-4 py-0">
           <div className="inline-block min-w-full align-middle">
@@ -559,18 +400,20 @@ const ListProperty = () => {
               data={paginatedProperty}
               renderRow={renderRow}
               loading={loading}
-              emptyMessage="No Property found. Click 'Add Property' to create your first Property."
+              emptyMessage="No properties found. Click 'Add' to create your first property."
             />
           </div>
         </div>
 
         {/* Use the shared Pagination component */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          themeUtils={themeUtils}
-        />
+        {paginatedProperty.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            themeUtils={themeUtils}
+          />
+        )}
       </CardContent>
 
       {/* Drawers / Dialogs */}
@@ -585,6 +428,7 @@ const ListProperty = () => {
         <ViewProperty
           property={selectedProperty}
           onClose={() => setIsViewDrawerOpen(false)}
+          baseURL={baseURL}
         />
       </CommonDialog>
 
@@ -597,14 +441,9 @@ const ListProperty = () => {
         width="75vw"
       >
         <AddProperty
-          onClose={() => {
-            setIsAddDrawerOpen(false);
-            fetchProperties();
-          }}
-          onSuccess={() => {
-            setIsAddDrawerOpen(false);
-            fetchProperties();
-          }}
+          onClose={() => setIsAddDrawerOpen(false)}
+          onSuccess={handleAddSuccess}
+          baseURL={baseURL}
         />
       </CommonDialog>
 
@@ -618,11 +457,10 @@ const ListProperty = () => {
       >
         <EditProperty
           property={selectedProperty}
+          propertyId={selectedProperty?.id}
           onClose={() => setIsEditDrawerOpen(false)}
-          onSuccess={() => {
-            setIsEditDrawerOpen(false);
-            fetchProperties();
-          }}
+          onSuccess={handleEditSuccess}
+          baseURL={baseURL}
         />
       </CommonDialog>
     </div>
