@@ -1,4 +1,5 @@
 // Profile.js
+
 import React, { useState } from "react";
 import { User, Mail, Lock, Edit2, Check, X, Camera } from "lucide-react";
 import { useTheme } from "../Settings/themeUtils";
