@@ -450,7 +450,7 @@ const ListCommunity = () => {
           <img
             src={community.profile_picture}
             alt={community.community_name || "Community"}
-            className="w-10 h-10 rounded-full object-cover border-2"
+            className="w-10 h-10 rounded-full object-cover border-1"
             style={{ 
               borderColor: theme.headerBg || "#6366f1",
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
