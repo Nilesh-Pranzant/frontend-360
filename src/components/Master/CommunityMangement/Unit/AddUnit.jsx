@@ -40,7 +40,7 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
     property_name: "",
     unit_number: "",
     customer_name: "",
-    floor: "",
+    floor_number: "", // Changed from 'floor' to 'floor_number' to match API
     unit_type: "",
     status: "unsold",
     meter_number: "",
@@ -142,18 +142,20 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
     try {
       setLoading(true);
 
-      // Prepare data for API
+      // Prepare data for API - match the exact field names from your API response
       const unitData = {
         community_id: parseInt(form.community_id),
         property_id: parseInt(form.property_id),
         unit_number: form.unit_number,
         customer_name: form.customer_name || null,
-        floor: form.floor || null,
+        floor_number: form.floor_number ? parseInt(form.floor_number) : null, // Changed to floor_number and parse as integer
         unit_type: form.unit_type || null,
         status: form.status || "unsold",
         meter_number: form.meter_number || null,
         description: form.description || null
       };
+
+      console.log("Sending unit data:", unitData); // Debug log
 
       // Make API call
       const response = await fetch(`${baseURL}/api/units`, {
@@ -324,14 +326,14 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                 />
               </div>
 
-              {/* Floor */}
+              {/* Floor Number - Updated to match API field name */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Floor
+                  Floor Number
                 </label>
                 <select
-                  value={form.floor}
-                  onChange={(e) => setForm({ ...form, floor: e.target.value })}
+                  value={form.floor_number}
+                  onChange={(e) => setForm({ ...form, floor_number: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
@@ -341,27 +343,27 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                   disabled={loading}
                 >
                   <option value="">Select Floor (optional)</option>
-                  <option value="Ground Floor">Ground Floor</option>
-                  <option value="1st Floor">1st Floor</option>
-                  <option value="2nd Floor">2nd Floor</option>
-                  <option value="3rd Floor">3rd Floor</option>
-                  <option value="4th Floor">4th Floor</option>
-                  <option value="5th Floor">5th Floor</option>
-                  <option value="6th Floor">6th Floor</option>
-                  <option value="7th Floor">7th Floor</option>
-                  <option value="8th Floor">8th Floor</option>
-                  <option value="9th Floor">9th Floor</option>
-                  <option value="10th Floor">10th Floor</option>
-                  <option value="11th Floor">11th Floor</option>
-                  <option value="12th Floor">12th Floor</option>
-                  <option value="13th Floor">13th Floor</option>
-                  <option value="14th Floor">14th Floor</option>
-                  <option value="15th Floor">15th Floor</option>
-                  <option value="16th Floor">16th Floor</option>
-                  <option value="17th Floor">17th Floor</option>
-                  <option value="18th Floor">18th Floor</option>
-                  <option value="19th Floor">19th Floor</option>
-                  <option value="20th Floor">20th Floor</option>
+                  <option value="0">Ground Floor</option>
+                  <option value="1">1st Floor</option>
+                  <option value="2">2nd Floor</option>
+                  <option value="3">3rd Floor</option>
+                  <option value="4">4th Floor</option>
+                  <option value="5">5th Floor</option>
+                  <option value="6">6th Floor</option>
+                  <option value="7">7th Floor</option>
+                  <option value="8">8th Floor</option>
+                  <option value="9">9th Floor</option>
+                  <option value="10">10th Floor</option>
+                  <option value="11">11th Floor</option>
+                  <option value="12">12th Floor</option>
+                  <option value="13">13th Floor</option>
+                  <option value="14">14th Floor</option>
+                  <option value="15">15th Floor</option>
+                  <option value="16">16th Floor</option>
+                  <option value="17">17th Floor</option>
+                  <option value="18">18th Floor</option>
+                  <option value="19">19th Floor</option>
+                  <option value="20">20th Floor</option>
                 </select>
               </div>
 
@@ -383,10 +385,10 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                 >
                   <option value="">Select Unit Type (optional)</option>
                   <option value="Studio">Studio</option>
-                  <option value="1 BHK">1 BHK</option>
-                  <option value="2 BHK">2 BHK</option>
-                  <option value="3 BHK">3 BHK</option>
-                  <option value="4 BHK">4 BHK</option>
+                  <option value="1BHK">1 BHK</option>
+                  <option value="2BHK">2 BHK</option>
+                  <option value="3BHK">3 BHK</option>
+                  <option value="4BHK">4 BHK</option>
                   <option value="Penthouse">Penthouse</option>
                   <option value="Duplex">Duplex</option>
                 </select>
