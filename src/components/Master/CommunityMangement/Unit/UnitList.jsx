@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Plus, Download, RefreshCw } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
 import { useToast } from "../../../../ui/common/CostumeTost";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { confirmDialog } from "primereact/confirmdialog";
 import SearchBar from "../../../../ui/Common/SearchBar";
 import RecordsPerPage from "../../../../ui/Common/RecordsPerPage";
 import Table from "../../../../ui/Common/Table";
@@ -17,6 +17,7 @@ import Card, {
 } from "../../../../ui/Common/Card";
 import Pagination from "../../../../ui/Common/Pagination";
 import { API_URL_UNIT } from "../../../../../config";
+import CustomConfirmDialog from "../../../../ui/common/CustomConfirmDialog"; // Import the custom component
 
 import AddUnit from "./AddUnit";
 import EditUnit from "./EditUnit";
@@ -30,6 +31,10 @@ const UnitList = () => {
   const [search, setSearch] = useState("");
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // State for custom confirm dialog
+  const [confirmDialogVisible, setConfirmDialogVisible] = useState(false);
+  const [unitToToggle, setUnitToToggle] = useState(null);
 
   // Modal States
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
@@ -71,9 +76,11 @@ const UnitList = () => {
       
       const response = await fetch(url);
       const data = await response.json();
+      // console.log("Fetched Units:", data);
+      
 
       if (response.ok) {
-        // Normalize data for frontend UI
+        // Normalize data for frontend UI based on actual API response
         const normalized = data.map((unit) => ({
           id: unit.unit_id,
           unit_id: unit.unit_id,
@@ -81,18 +88,22 @@ const UnitList = () => {
           community_name: unit.community_name || "N/A",
           property_id: unit.property_id,
           property_name: unit.property_name || "N/A",
+          unit_code: unit.unit_code || "-",
           unit_number: unit.unit_number || "-",
           unit_type: unit.unit_type || "-",
-          floor: unit.floor || "-",
+          floor: unit.floor_number || "-",
+          floor_number: unit.floor_number || "-",
           status: unit.status || "unsold",
           customer_name: unit.customer_name || "Customer Not Assigned",
           customer_id: unit.customer_id,
-          meter_number: unit.meter_number || "Not Assigned",
+          area_sqft: unit.area_sqft || "-",
+          is_occupied: unit.is_occupied || false,
           is_active: unit.is_active,
           description: unit.description || "",
         }));
 
         setUnits(normalized);
+        console.log("Normalized Units:", normalized);
         setCurrentPage(1);
       } else {
         console.error("Error fetching units:", data);
@@ -160,62 +171,61 @@ const UnitList = () => {
     setIsEditDrawerOpen(true);
   };
 
-  const handleDelete = (unit) => {
-    const { id, is_active: isActive } = unit;
-
+  const handleToggleClick = (unit) => {
     if (statusInProgress.current) return;
-    statusInProgress.current = true;
+    setUnitToToggle(unit);
+    setConfirmDialogVisible(true);
+  };
+
+  const handleToggleConfirm = async () => {
+    if (!unitToToggle) return;
     
-    confirmDialog({
-      message: `Do you want to ${isActive ? "deactivate" : "activate"} this unit?`,
-      header: "Are you sure?",
-      icon: "pi pi-exclamation-triangle",
-      acceptClassName: isActive ? "p-button-danger" : "p-button-success",
-      acceptLabel: "Yes",
-      rejectLabel: "No",
-      accept: async () => {
-        try {
-          // API call to delete/deactivate unit
-          const response = await fetch(`${baseURL}/api/units/${id}`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
+    const { id, is_active: isActive } = unitToToggle;
+    
+    statusInProgress.current = true;
+    setConfirmDialogVisible(false);
+    
+    try {
+      // API call to delete/deactivate unit
+      const response = await fetch(`${baseURL}/api/units/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-          const result = await response.json();
+      const result = await response.json();
 
-          if (response.ok) {
-            // Update local state
-            const updatedUnits = units.map((u) =>
-              u.id === id ? { ...u, is_active: !isActive, status: !isActive ? "unsold" : u.status } : u
-            );
-            setUnits(updatedUnits);
+      if (response.ok) {
+        // Update local state
+        const updatedUnits = units.map((u) =>
+          u.id === id ? { ...u, is_active: !isActive, status: !isActive ? "unsold" : u.status } : u
+        );
+        setUnits(updatedUnits);
 
-            if (isActive) {
-              toast.error("Success", "Unit deactivated successfully!");
-            } else {
-              toast.success("Success", "Unit activated successfully!");
-            }
-          } else {
-            throw new Error(result.message || "Failed to update unit status");
-          }
-        } catch (err) {
-          console.error("Status Change Error:", err);
-          toast.error("Error", err.message || "Something went wrong while changing status");
-        } finally {
-          setTimeout(() => {
-            statusInProgress.current = false;
-          }, 1000);
+        if (isActive) {
+          toast.error("Success", "Unit deactivated successfully!");
+        } else {
+          toast.success("Success", "Unit activated successfully!");
         }
-      },
-      reject: () => {
-        statusInProgress.current = false;
-      },
-      onHide: () => {
-        statusInProgress.current = false;
+      } else {
+        throw new Error(result.message || "Failed to update unit status");
       }
-    });
+    } catch (err) {
+      console.error("Status Change Error:", err);
+      toast.error("Error", err.message || "Something went wrong while changing status");
+    } finally {
+      setTimeout(() => {
+        statusInProgress.current = false;
+        setUnitToToggle(null);
+      }, 1000);
+    }
+  };
+
+  const handleToggleReject = () => {
+    setConfirmDialogVisible(false);
+    setUnitToToggle(null);
+    statusInProgress.current = false;
   };
 
   const handleAddSuccess = () => {
@@ -244,6 +254,7 @@ const UnitList = () => {
       "Customer Name",
       "Floor",
       "Unit Type",
+      "Area (sqft)",
       "Status",
     ];
 
@@ -258,6 +269,7 @@ const UnitList = () => {
           `"${unit.customer_name || "Customer Not Assigned"}"`,
           `"${unit.floor || ""}"`,
           `"${unit.unit_type || ""}"`,
+          `"${unit.area_sqft || ""}"`,
           `"${unit.status || ""}"`,
         ].join(",")
       ),
@@ -281,6 +293,7 @@ const UnitList = () => {
     "Customer Name",
     "Floor",
     "Unit Type",
+    "Area (sqft)",
     "Status",
     "Action",
   ];
@@ -306,9 +319,9 @@ const UnitList = () => {
         <td
           className="px-3 py-2 text-sm text-left truncate max-w-[150px]"
           style={{ color: themeUtils.getTextColor(true) }}
-          title={unit.property_name}
+          title={unit?.propertyName || unit?.property_name || "-"}
         >
-          {truncateText(unit.property_name)}
+          {truncateText(unit?.propertyName || unit?.property_name || "-")}
         </td>
         <td
           className="px-3 py-2 text-sm text-center"
@@ -335,6 +348,12 @@ const UnitList = () => {
         >
           {unit.unit_type}
         </td>
+        <td
+          className="px-3 py-2 text-sm text-center"
+          style={{ color: themeUtils.getTextColor(true) }}
+        >
+          {unit.area_sqft}
+        </td>
         <td className="px-3 py-2 text-center">
           <span className={getStatusColor(unit.status)}>
             {unit.status || "unsold"}
@@ -344,7 +363,7 @@ const UnitList = () => {
           <ThreeDotsMenu
             onView={() => handleView(unit)}
             onEdit={() => handleEdit(unit)}
-            onDelete={() => handleDelete(unit)}
+            onDelete={() => handleToggleClick(unit)}
             viewTitle="View Unit"
             editTitle="Edit Unit"
             deleteTitle={unit.is_active ? "Deactivate Unit" : "Activate Unit"}
@@ -357,7 +376,19 @@ const UnitList = () => {
 
   return (
     <div className="space-y-4">
-      <ConfirmDialog />
+      {/* Custom ConfirmDialog with glass effect overlay */}
+      <CustomConfirmDialog
+        visible={confirmDialogVisible}
+        onHide={handleToggleReject}
+        header="Are you sure?"
+        message={unitToToggle?.is_active 
+          ? "Do you want to deactivate this unit?" 
+          : "Do you want to activate this unit?"}
+        accept={handleToggleConfirm}
+        reject={handleToggleReject}
+        acceptLabel="Yes"
+        rejectLabel="No"
+      />
 
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 py-2">

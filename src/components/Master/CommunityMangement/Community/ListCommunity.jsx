@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Plus, Download, RefreshCw } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
 import { useToast } from "../../../../ui/common/CostumeTost";
-import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
+import { confirmDialog } from "primereact/confirmdialog";
 import SearchBar from "../../../../ui/Common/SearchBar";
 import RecordsPerPage from "../../../../ui/Common/RecordsPerPage";
 import Table from "../../../../ui/Common/Table";
@@ -15,6 +15,7 @@ import ViewCommunity from "./ViewCommunity";
 import EditCommunity from "./EditCommunity";
 import Pagination from "../../../../ui/Common/Pagination";
 import { API_URL_COMMUNITY } from "../../../../../config";
+import CustomConfirmDialog from "../../../../ui/common/CustomConfirmDialog"; // Import the custom component
 
 const ListCommunity = () => {
   const { themeUtils } = useTheme();
@@ -22,6 +23,10 @@ const ListCommunity = () => {
 
   // Ref to prevent double delete execution
   const deleteInProgress = useRef(false);
+  
+  // State for custom confirm dialog
+  const [confirmDialogVisible, setConfirmDialogVisible] = useState(false);
+  const [communityToDelete, setCommunityToDelete] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -48,7 +53,13 @@ const ListCommunity = () => {
       const data = await response.json();
       
       if (response.ok) {
-        setCommunities(data);
+        // Sort communities in ascending order by community_code
+        const sortedData = data.sort((a, b) => {
+          const codeA = a.community_code || '';
+          const codeB = b.community_code || '';
+          return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: 'base' });
+        });
+        setCommunities(sortedData);
       } else {
         console.error("Error fetching communities:", data);
         toast.error("Error", "Failed to fetch communities. Please try again.");
@@ -87,47 +98,51 @@ const ListCommunity = () => {
       : Math.ceil(filteredCommunities.length / perPage);
 
   /* ================= ACTIONS ================= */
-  const handleDelete = (communityId) => {
+  const handleDeleteClick = (communityId) => {
     if (deleteInProgress.current) return;
+    setCommunityToDelete(communityId);
+    setConfirmDialogVisible(true);
+  };
 
-    confirmDialog({
-      message: "Do you want to delete this Community? This action cannot be undone.",
-      header: "Delete Confirmation",
-      icon: "pi pi-exclamation-triangle",
-      acceptClassName: "p-button-danger",
-      acceptLabel: "Yes, Delete",
-      rejectLabel: "Cancel",
-      accept: async () => {
-        deleteInProgress.current = true;
-        try {
-          const response = await fetch(`${baseURL}/api/communities/${communityId}`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          const result = await response.json();
-          
-          if (response.ok) {
-            setCommunities((prev) =>
-              prev.filter((c) => c.community_id !== communityId)
-            );
-            toast.success("Deleted!", "Community deleted successfully.");
-          } else {
-            throw new Error(result.message || "Failed to delete");
-          }
-        } catch (error) {
-          console.error("Delete failed:", error);
-          toast.error("Delete Failed", error.message || "Failed to delete community. Please try again.");
-        } finally {
-          setTimeout(() => { deleteInProgress.current = false; }, 1500);
-        }
-      },
-      reject: () => {
+  const handleDeleteConfirm = async () => {
+    if (!communityToDelete) return;
+    
+    deleteInProgress.current = true;
+    setConfirmDialogVisible(false);
+    
+    try {
+      const response = await fetch(`${baseURL}/api/communities/${communityToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        setCommunities((prev) =>
+          prev.filter((c) => c.community_id !== communityToDelete)
+        );
+        toast.success("Deleted!", "Community deleted successfully.");
+      } else {
+        throw new Error(result.message || "Failed to delete");
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error("Delete Failed", error.message || "Failed to delete community. Please try again.");
+    } finally {
+      setTimeout(() => { 
         deleteInProgress.current = false;
-      },
-    });
+        setCommunityToDelete(null);
+      }, 1500);
+    }
+  };
+
+  const handleDeleteReject = () => {
+    setConfirmDialogVisible(false);
+    setCommunityToDelete(null);
+    deleteInProgress.current = false;
   };
 
   const handleView = (community) => {
@@ -237,7 +252,7 @@ const ListCommunity = () => {
   const renderRow = (community, index) => (
     <>
       <td
-        className="px-3 py-1.5 text-sm text-center"
+        className="px-4 py-1.5 text-sm text-center"
         style={{ color: themeUtils.getTextColor(false) }}
       >
         {perPage === "All" || perPage === Infinity || perPage <= 0
@@ -245,7 +260,7 @@ const ListCommunity = () => {
           : (currentPage - 1) * perPage + index + 1}
       </td>
       <td
-        className="px-3 py-1.5 text-sm text-center"
+        className="px-4 py-1.5 text-sm text-center"
         style={{ color: themeUtils.getTextColor(true) }}
       >
         <div className="flex justify-center">
@@ -267,71 +282,71 @@ const ListCommunity = () => {
         </div>
       </td>
       <td
-        className="px-3 py-1.5 text-sm text-left truncate max-w-[150px]"
+        className="px-4 py-1.5 text-sm text-center truncate max-w-[150px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.community_code || "-"}
       >
         {truncateText(community.community_code)}
       </td>
       <td
-        className="px-3 py-1.5 text-sm text-left truncate max-w-[200px]"
+        className="px-4 py-1.5 text-sm text-left truncate max-w-[200px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.community_name || "-"}
       >
         {truncateText(community.community_name)}
       </td>
       <td
-        className="px-3 py-1.5 text-sm text-left truncate max-w-[200px]"
+        className="px-4 py-1.5 text-sm text-left truncate max-w-[200px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.location || "-"}
       >
         {truncateText(community.location)}
       </td>
       <td
-        className="px-3 py-1.5 text-sm text-left truncate max-w-[150px]"
+        className="px-4 py-1.5 text-sm text-left truncate max-w-[150px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.city || "-"}
       >
         {truncateText(community.city)}
       </td>
       <td
-        className="px-3 py-1.5 text-sm text-left truncate max-w-[150px]"
+        className="px-4 py-1.5 text-sm text-left truncate max-w-[150px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.country || "UAE"}
       >
         {truncateText(community.country || "UAE")}
       </td>
       <td
-        className="px-3 py-1.5 text-sm text-left truncate max-w-[200px]"
+        className="px-4 py-1.5 text-sm text-left truncate max-w-[200px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.manager_name || "-"}
       >
         {truncateText(community.manager_name)}
       </td>
       <td
-        className="px-3 py-1.5 text-sm text-left"
+        className="px-4 py-1.5 text-sm text-left"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.manager_contact?.toString() || "-"}
       >
         {formatManagerContact(community.manager_contact)}
       </td>
       <td
-        className="px-3 py-1.5 text-sm text-center"
+        className="px-4 py-1.5 text-sm text-center"
         style={{ color: themeUtils.getTextColor(true) }}
       >
         {community.total_properties ?? 0}
       </td>
       <td
-        className="px-3 py-1.5 text-sm text-center"
+        className="px-4 py-1.5 text-sm text-center"
         style={{ color: themeUtils.getTextColor(true) }}
       >
         {community.total_units ?? 0}
       </td>
-      <td className="px-3 py-1.5 text-center">
+      <td className="px-4 py-1.5 text-center">
         <ThreeDotsMenu
           onView={() => handleView(community)}
           onEdit={() => handleEdit(community)}
-          onDelete={() => handleDelete(community.community_id)}
+          onDelete={() => handleDeleteClick(community.community_id)}
           viewTitle="View Community"
           editTitle="Edit Community"
           deleteTitle="Delete Community"
@@ -343,7 +358,17 @@ const ListCommunity = () => {
 
   return (
     <div className="space-y-4">
-      <ConfirmDialog />
+      {/* Custom ConfirmDialog with glass effect */}
+      <CustomConfirmDialog
+        visible={confirmDialogVisible}
+        onHide={handleDeleteReject}
+        header="Delete Confirmation"
+        message="Do you want to delete this Community? This action cannot be undone."
+        accept={handleDeleteConfirm}
+        reject={handleDeleteReject}
+        acceptLabel="Yes, Delete"
+        rejectLabel="Cancel"
+      />
 
       {/* Header */}
       <CardHeader>

@@ -309,7 +309,8 @@ const AddCommunity = ({ onClose, onSuccess }) => {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Success!", "Community added successfully.");
+        // Removed the toast.success from here to prevent double message
+        // Let the parent component handle the success message through onSuccess
         if (onSuccess) onSuccess(data);
         if (onClose) onClose();
       } else {
