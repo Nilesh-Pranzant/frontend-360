@@ -27,38 +27,44 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
   const isModal = !!onClose;
 
   // Base URL for API
-  const baseURL = propBaseURL || API_URL_PROPERTY || "http://192.168.1.39:5000";
-  const communityBaseURL = API_URL_COMMUNITY || "http://192.168.1.39:5000";
+  const baseURL = propBaseURL || API_URL_PROPERTY || "http://192.168.1.63:5000";
+  const communityBaseURL = API_URL_COMMUNITY || "http://192.168.1.63:5000";
 
   const [form, setForm] = useState({
     community_id: "",
     property_name: "",
     total_units: "",
-    address_line1: "",
-    address_line2: "",
-    country: "UAE",
-    city: "Dubai",
-    zip_code: "",
-    location: ""
+    // address_line1: "",
+    // address_line2: "",
+    // country: "UAE",
+    // city: "Dubai",
+    // zip_code: "",
+    // location: ""
   });
 
-  // Fetch communities from API
+  const selectedCommunity = communities.find(
+    (c) => c.community_id === form.community_id
+  );
+
   useEffect(() => {
     const fetchCommunities = async () => {
       try {
         setLoadingCommunities(true);
+
         const response = await fetch(`${communityBaseURL}/api/communities`);
-        const data = await response.json();
+        const result = await response.json();
 
         if (response.ok) {
-          setCommunities(data);
+          const communityList = Array.isArray(result)
+            ? result
+            : result.data || [];
+
+          setCommunities(communityList);
         } else {
-          console.error("Error fetching communities:", data);
-          toast.error("Error", "Failed to load communities");
+          toast.error("Error", result.message || "Failed to load communities");
         }
       } catch (error) {
-        console.error("Error fetching communities:", error);
-        toast.error("Error", "Failed to load communities. Please check your connection.");
+        toast.error("Error", "Failed to load communities.");
       } finally {
         setLoadingCommunities(false);
       }
@@ -71,14 +77,12 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file type
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
       if (!validTypes.includes(file.type)) {
         toast.error("Invalid File Type", "Please upload a valid image file (JPG, PNG, WEBP)");
         return;
       }
 
-      // Validate file size (5MB max)
       if (file.size > 5 * 1024 * 1024) {
         toast.error("File Too Large", "Image size should be less than 5MB");
         return;
@@ -93,7 +97,6 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
     }
   };
 
-  // Handle image removal
   const handleImageRemove = () => {
     setSelectedImage(null);
     setImagePreview(null);
@@ -103,64 +106,44 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
     }
   };
 
-  // ────────────────────────────────────────────────
-  // Form submission
-  // ────────────────────────────────────────────────
   const handleSubmit = async () => {
-    // Validation - community and property name are required
-    const missingFields = [];
-    if (!form.community_id) missingFields.push("Community");
-    if (!form.property_name) missingFields.push("Property Name");
-
-    if (missingFields.length > 0) {
-      toast.error("Validation Error", `Please fill all required fields: ${missingFields.join(", ")}`);
+    if (!form.community_id || !form.property_name) {
+      toast.error("Validation Error", "Community and Property Name are required");
       return;
     }
 
     setLoading(true);
 
     try {
-      // Create FormData for API call
       const formData = new FormData();
-      
-      // Append all form fields
-      formData.append("community_id", form.community_id);
-      formData.append("property_name", form.property_name);
+
+      formData.append("community_id", Number(form.community_id));
+      formData.append("property_name", form.property_name.trim());
       formData.append("total_units", form.total_units || "0");
-      formData.append("address_line1", form.address_line1 || "");
-      formData.append("address_line2", form.address_line2 || "");
-      formData.append("country", form.country || "UAE");
-      formData.append("city", form.city || "Dubai");
-      formData.append("zip_code", form.zip_code || "");
-      formData.append("location", form.location || form.address_line1 || "");
-      
-      // Append image if selected
+      formData.append( 
+        "property_code", 
+        `PROP-${Date.now()}` 
+        );
+
       if (selectedImage) {
         formData.append("property_image", selectedImage);
       }
 
-      // Make API call
       const response = await fetch(`${baseURL}/api/properties`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
-      if (response.ok) {
-        toast.success("Success", "Property added successfully!");
-
-        setTimeout(() => {
-          if (isModal && onClose) onClose();
-          if (onSuccess) onSuccess(data);
-          if (!isModal) navigate("/community-management/Property", { replace: true });
-        }, 1000);
-      } else {
-        throw new Error(data.message || "Failed to add property");
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to add property");
       }
+
+      toast.success("Success", "Property added successfully!");
+
     } catch (err) {
-      console.error("Add property error:", err);
-      toast.error("Error", err.message || "Failed to add property");
+      toast.error("Error", err.message);
     } finally {
       setLoading(false);
     }
@@ -193,7 +176,6 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
 
       <CardContent>
         <div className="space-y-6 p-2">
-          {/* Main Content - Image on Left, Fields on Right */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Side - Image Upload */}
             <div className="lg:col-span-4">
@@ -205,7 +187,6 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                   Property Image
                 </label>
 
-                {/* Image Upload Area - Fixed height container */}
                 <div className="relative w-full" style={{ height: '220px' }}>
                   <input
                     id="property-image-upload"
@@ -217,7 +198,6 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                   />
 
                   {!imagePreview ? (
-                    // Upload placeholder with fixed height
                     <div
                       onClick={() => !loading && document.getElementById('property-image-upload').click()}
                       className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors w-full h-full flex items-center justify-center"
@@ -246,13 +226,11 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                       </div>
                     </div>
                   ) : (
-                    // Image preview with full coverage
                     <div className="relative rounded-lg overflow-hidden border-2 w-full h-full"
                       style={{
                         borderColor: theme.headerBg || "#6366f1",
                       }}
                     >
-                      {/* Close button */}
                       <button
                         onClick={handleImageRemove}
                         className="absolute top-2 right-2 p-1 rounded-full bg-red-500 hover:bg-red-600 transition-colors z-10 shadow-lg"
@@ -261,14 +239,12 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                         <X className="w-3 h-3 text-white" />
                       </button>
 
-                      {/* Image preview */}
                       <img
                         src={imagePreview}
                         alt="Property preview"
                         className="w-full h-full object-cover"
                       />
 
-                      {/* Change image overlay */}
                       <div
                         onClick={() => !loading && document.getElementById('property-image-upload').click()}
                         className="absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
@@ -306,7 +282,7 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                       name="community_id"
                       value={form.community_id}
                       onChange={(e) =>
-                        setForm({ ...form, community_id: e.target.value })
+                        setForm({ ...form, community_id: Number(e.target.value) })
                       }
                       className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all appearance-none"
                       style={{
@@ -327,6 +303,23 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                       <p className="text-xs mt-1" style={{ color: themeUtils.getTextColor(false) }}>
                         Loading communities...
                       </p>
+                    )}
+
+                    {/* ← Added here: Community Address display */}
+                    {selectedCommunity && (
+                      <div
+                        className="mt-4 p-4 rounded-lg border text-sm"
+                        style={{
+                          borderColor: themeUtils.getBorderColor(),
+                          backgroundColor: themeUtils.getBgColor("input"),
+                          color: themeUtils.getTextColor(true),
+                        }}
+                      >
+                        <h5 className="font-semibold mb-2">Community Address</h5>
+                        <p><strong>Location:</strong> {selectedCommunity.location || "-"}</p>
+                        <p><strong>City:</strong> {selectedCommunity.city || "-"}</p>
+                        <p><strong>Country:</strong> {selectedCommunity.country || "-"}</p>
+                      </div>
                     )}
                   </div>
 
@@ -395,7 +388,7 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                     <input
                       type="text"
                       name="location"
-                      value={form.location}
+                      value={selectedCommunity?.location || form.location || ""}
                       onChange={(e) =>
                         setForm({ ...form, location: e.target.value })
                       }
@@ -490,7 +483,7 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                     <input
                       type="text"
                       name="address_line1"
-                      value={form.address_line1}
+                      value={form.address_line1 || ""}
                       onChange={(e) =>
                         setForm({ ...form, address_line1: e.target.value })
                       }
@@ -515,7 +508,7 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                     <input
                       type="text"
                       name="address_line2"
-                      value={form.address_line2}
+                      value={form.address_line2 || ""}
                       onChange={(e) =>
                         setForm({ ...form, address_line2: e.target.value })
                       }
@@ -540,7 +533,7 @@ const AddProperty = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                     <input
                       type="text"
                       name="zip_code"
-                      value={form.zip_code}
+                      value={form.zip_code || ""}
                       onChange={(e) =>
                         setForm({ ...form, zip_code: e.target.value })
                       }

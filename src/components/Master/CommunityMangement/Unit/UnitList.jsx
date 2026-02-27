@@ -254,7 +254,6 @@ const UnitList = () => {
       "Customer Name",
       "Floor",
       "Unit Type",
-      "Area (sqft)",
       "Status",
     ];
 
@@ -293,7 +292,6 @@ const UnitList = () => {
     "Customer Name",
     "Floor",
     "Unit Type",
-    "Area (sqft)",
     "Status",
     "Action",
   ];
@@ -348,12 +346,7 @@ const UnitList = () => {
         >
           {unit.unit_type}
         </td>
-        <td
-          className="px-3 py-2 text-sm text-center"
-          style={{ color: themeUtils.getTextColor(true) }}
-        >
-          {unit.area_sqft}
-        </td>
+        
         <td className="px-3 py-2 text-center">
           <span className={getStatusColor(unit.status)}>
             {unit.status || "unsold"}

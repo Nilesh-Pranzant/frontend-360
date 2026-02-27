@@ -21,7 +21,7 @@ const ViewProperty = ({ property: propProperty, onClose, baseURL: propBaseURL })
   const [error, setError] = useState(null);
 
   // Base URL for API
-  const baseURL = propBaseURL || API_URL_PROPERTY || "http://192.168.1.39:5000";
+  const baseURL = propBaseURL || API_URL_PROPERTY || "http://192.168.1.63:5000";
 
   // Check if modal/drawer mode
   const isModal = !!propProperty || !!onClose;
@@ -48,7 +48,9 @@ const ViewProperty = ({ property: propProperty, onClose, baseURL: propBaseURL })
       try {
         setLoading(true);
         const response = await fetch(`${baseURL}/api/properties/${propertyId}`);
+        console.log("response", response.json());
         const data = await response.json();
+        console.log("our data", data);
 
         if (response.ok) {
           setProperty(data);
@@ -170,6 +172,7 @@ const ViewProperty = ({ property: propProperty, onClose, baseURL: propBaseURL })
               }}
             >
               Property Details
+              {console.log("property", property)}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
@@ -180,7 +183,8 @@ const ViewProperty = ({ property: propProperty, onClose, baseURL: propBaseURL })
                   Community Name:
                 </p>
                 <p style={{ color: themeUtils.getTextColor(true) }}>
-                  {property.community_name || "N/A"}
+                  {/* {console.log("Community name",property?.communityName)} */}
+                  {property?.communityName || "N/A"}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -224,7 +228,7 @@ const ViewProperty = ({ property: propProperty, onClose, baseURL: propBaseURL })
                   Location:
                 </p>
                 <p style={{ color: themeUtils.getTextColor(true) }}>
-                  {property.location || property.address_line1 || "N/A"}
+                  {property?.location || property?.address_line1 || "N/A"}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -235,7 +239,7 @@ const ViewProperty = ({ property: propProperty, onClose, baseURL: propBaseURL })
                   City:
                 </p>
                 <p style={{ color: themeUtils.getTextColor(true) }}>
-                  {property.city || "N/A"}
+                  {property?.city || "N/A"}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -246,7 +250,7 @@ const ViewProperty = ({ property: propProperty, onClose, baseURL: propBaseURL })
                   Country:
                 </p>
                 <p style={{ color: themeUtils.getTextColor(true) }}>
-                  {property.country || "UAE"}
+                  {property?.country || "UAE"}
                 </p>
               </div>
             </div>
@@ -276,7 +280,7 @@ const ViewProperty = ({ property: propProperty, onClose, baseURL: propBaseURL })
                   Address Line 1:
                 </p>
                 <p style={{ color: themeUtils.getTextColor(true) }}>
-                  {property.address_line1 || "N/A"}
+                  {property?.address_line1 || "N/A"}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -287,7 +291,7 @@ const ViewProperty = ({ property: propProperty, onClose, baseURL: propBaseURL })
                   Address Line 2:
                 </p>
                 <p style={{ color: themeUtils.getTextColor(true) }}>
-                  {property.address_line2 || "N/A"}
+                  {property?.address_line2 || "N/A"}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -298,7 +302,7 @@ const ViewProperty = ({ property: propProperty, onClose, baseURL: propBaseURL })
                   Zip Code:
                 </p>
                 <p style={{ color: themeUtils.getTextColor(true) }}>
-                  {property.zip_code || "N/A"}
+                  {property?.zip_code || "N/A"}
                 </p>
               </div>
             </div>
