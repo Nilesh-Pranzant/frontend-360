@@ -269,7 +269,7 @@ const ListCommunity = () => {
               ? `${baseURL}${community.profile_image}` 
               : `https://ui-avatars.com/api/?name=${encodeURIComponent(community.community_name || 'Community')}&background=6366f1&color=fff&size=40&bold=true`}
             alt={community.community_name || "Community"}
-            className="w-10 h-10 rounded-full object-cover border"
+            className="w-8 h-8 rounded-full object-cover border"
             style={{
               borderColor: "#6366f1",
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
@@ -289,7 +289,7 @@ const ListCommunity = () => {
         {truncateText(community.community_code)}
       </td>
       <td
-        className="px-4 py-1.5 text-sm text-left truncate max-w-[200px]"
+        className="px-4 py-1 text-sm text-left truncate max-w-[200px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.community_name || "-"}
       >
