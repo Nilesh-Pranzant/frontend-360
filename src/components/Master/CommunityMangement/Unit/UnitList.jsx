@@ -133,8 +133,8 @@ const UnitList = () => {
   };
 
   const getStatusColor = (status) => {
-    if (status === "sold") return "text-green-600 font-medium";
-    if (status === "reserved") return "text-yellow-600 font-medium";
+    if (status === "Sold") return "text-green-600 font-medium";
+   
     return "text-red-600 font-medium";
   };
 

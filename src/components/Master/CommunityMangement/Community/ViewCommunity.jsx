@@ -386,37 +386,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
               </div>
             </div>
 
-            {/* Property List */}
-            <div 
-              className="rounded-lg border p-6"
-              style={{ 
-                borderColor: themeUtils.getBorderColor(),
-                backgroundColor: themeUtils.getBgColor("card")
-              }}
-            >
-              <h4
-                className="text-md font-semibold mb-4"
-                style={{ color: theme.headerBg || "#6366f1" }}
-              >
-                Property List
-              </h4>
-
-              <div className="overflow-x-hidden -mx-4 sm:mx-0">
-                <div className="inline-block min-w-full align-middle">
-                  <Table
-                    headers={propertyHeaders}
-                    data={properties}
-                    renderRow={renderPropertyRow}
-                    loading={loadingProperties}
-                    emptyMessage={
-                      loadingProperties
-                        ? "Loading properties..."
-                        : "No properties associated with this community."
-                    }
-                  />
-                </div>
-              </div>
-            </div>
+            
           </div>
         </div>
 
