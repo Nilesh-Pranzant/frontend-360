@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Upload, X } from "lucide-react";
+import { Upload, X, ChevronDown, Search } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
 import { useToast } from "../../../../ui/common/CostumeTost";
 import Button from "../../../../ui/Common/Button";
@@ -11,12 +11,14 @@ const AddCommunity = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
   const [form, setForm] = useState({
-    community_code: "",
     community_name: "",
-    location: "",
+    address1: "",
+    address2: "",
     city: "",
-    country: "UAE",
+    country_code: "+971", // Default to UAE
     manager_name: "",
     manager_contact: "",
     total_properties: "",
@@ -26,11 +28,11 @@ const AddCommunity = ({ onClose, onSuccess }) => {
 
   // Validation errors state
   const [errors, setErrors] = useState({
-    community_code: "",
     community_name: "",
-    location: "",
+    address1: "",
+    address2: "",
     city: "",
-    country: "",
+    country_code: "",
     manager_name: "",
     manager_contact: "",
     total_properties: "",
@@ -38,21 +40,118 @@ const AddCommunity = ({ onClose, onSuccess }) => {
     description: "",
   });
 
-  // Base URL for API
-  const baseURL = API_URL_COMMUNITY || "http://192.168.1.39:5000";
+  // Country codes with digit validation rules
+  const countryCodes = [
+    { code: "+971", country: "UAE", digits: 9, search: "uae united arab emirates" },
+    { code: "+966", country: "Saudi Arabia", digits: 9, search: "saudi arabia ksa" },
+    { code: "+965", country: "Kuwait", digits: 8, search: "kuwait" },
+    { code: "+974", country: "Qatar", digits: 8, search: "qatar" },
+    { code: "+973", country: "Bahrain", digits: 8, search: "bahrain" },
+    { code: "+968", country: "Oman", digits: 8, search: "oman" },
+    { code: "+20", country: "Egypt", digits: 10, search: "egypt" },
+    { code: "+962", country: "Jordan", digits: 9, search: "jordan" },
+    { code: "+961", country: "Lebanon", digits: 8, search: "lebanon" },
+    { code: "+967", country: "Yemen", digits: 9, search: "yemen" },
+    { code: "+964", country: "Iraq", digits: 10, search: "iraq" },
+    { code: "+963", country: "Syria", digits: 9, search: "syria" },
+    { code: "+92", country: "Pakistan", digits: 10, search: "pakistan pak" },
+    { code: "+94", country: "Sri Lanka", digits: 9, search: "sri lanka" },
+    { code: "+880", country: "Bangladesh", digits: 10, search: "bangladesh" },
+    { code: "+60", country: "Malaysia", digits: 9, search: "malaysia" },
+    { code: "+65", country: "Singapore", digits: 8, search: "singapore" },
+    { code: "+62", country: "Indonesia", digits: 10, search: "indonesia" },
+    { code: "+63", country: "Philippines", digits: 10, search: "philippines" },
+    { code: "+66", country: "Thailand", digits: 9, search: "thailand" },
+    { code: "+84", country: "Vietnam", digits: 9, search: "vietnam" },
+    { code: "+44", country: "United Kingdom", digits: 10, search: "uk united kingdom britain england" },
+    { code: "+1", country: "USA/Canada", digits: 10, search: "usa united states america canada" },
+    { code: "+33", country: "France", digits: 9, search: "france" },
+    { code: "+49", country: "Germany", digits: 10, search: "germany" },
+    { code: "+39", country: "Italy", digits: 10, search: "italy" },
+    { code: "+34", country: "Spain", digits: 9, search: "spain" },
+    { code: "+31", country: "Netherlands", digits: 9, search: "netherlands holland" },
+    { code: "+32", country: "Belgium", digits: 8, search: "belgium" },
+    { code: "+41", country: "Switzerland", digits: 9, search: "switzerland" },
+    { code: "+43", country: "Austria", digits: 10, search: "austria" },
+    { code: "+46", country: "Sweden", digits: 9, search: "sweden" },
+    { code: "+47", country: "Norway", digits: 8, search: "norway" },
+    { code: "+45", country: "Denmark", digits: 8, search: "denmark" },
+    { code: "+358", country: "Finland", digits: 9, search: "finland" },
+    { code: "+353", country: "Ireland", digits: 9, search: "ireland" },
+    { code: "+351", country: "Portugal", digits: 9, search: "portugal" },
+    { code: "+30", country: "Greece", digits: 10, search: "greece" },
+    { code: "+90", country: "Turkey", digits: 10, search: "turkey" },
+    { code: "+7", country: "Russia", digits: 10, search: "russia" },
+    { code: "+380", country: "Ukraine", digits: 9, search: "ukraine" },
+    { code: "+48", country: "Poland", digits: 9, search: "poland" },
+    { code: "+420", country: "Czech Republic", digits: 9, search: "czech republic" },
+    { code: "+36", country: "Hungary", digits: 9, search: "hungary" },
+    { code: "+40", country: "Romania", digits: 9, search: "romania" },
+    { code: "+359", country: "Bulgaria", digits: 9, search: "bulgaria" },
+    { code: "+381", country: "Serbia", digits: 9, search: "serbia" },
+    { code: "+385", country: "Croatia", digits: 9, search: "croatia" },
+    { code: "+86", country: "China", digits: 11, search: "china" },
+    { code: "+852", country: "Hong Kong", digits: 8, search: "hong kong" },
+    { code: "+853", country: "Macau", digits: 8, search: "macau" },
+    { code: "+886", country: "Taiwan", digits: 9, search: "taiwan" },
+    { code: "+81", country: "Japan", digits: 10, search: "japan" },
+    { code: "+82", country: "South Korea", digits: 10, search: "south korea korea" },
+    { code: "+61", country: "Australia", digits: 9, search: "australia" },
+    { code: "+64", country: "New Zealand", digits: 9, search: "new zealand" },
+    { code: "+27", country: "South Africa", digits: 9, search: "south africa" },
+    { code: "+234", country: "Nigeria", digits: 10, search: "nigeria" },
+    { code: "+254", country: "Kenya", digits: 9, search: "kenya" },
+    { code: "+212", country: "Morocco", digits: 9, search: "morocco" },
+    { code: "+216", country: "Tunisia", digits: 8, search: "tunisia" },
+    { code: "+213", country: "Algeria", digits: 9, search: "algeria" },
+  ];
+
+  // Base URL for API from config
+  const baseURL = API_URL_COMMUNITY || "http://localhost:5000";
+
+  // Get current user ID from localStorage
+  const getCurrentUserId = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.id || user.user_id || null;
+      }
+    } catch (e) {
+      console.error("Error getting user ID:", e);
+    }
+    return null;
+  };
+
+  // Get current country's digit requirement
+  const getCurrentCountryDigits = () => {
+    const country = countryCodes.find(c => c.code === form.country_code);
+    return country ? country.digits : 10;
+  };
+
+  // Filter countries based on search
+  const filteredCountries = countrySearch
+    ? countryCodes.filter(
+        (c) =>
+          c.country.toLowerCase().includes(countrySearch.toLowerCase()) ||
+          c.code.includes(countrySearch) ||
+          c.search?.toLowerCase().includes(countrySearch.toLowerCase())
+      )
+    : countryCodes;
+
+  // Get selected country display
+  const selectedCountry = countryCodes.find((c) => c.code === form.country_code);
 
   // Handle file selection
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
-      // Validate file type
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
       if (!validTypes.includes(selectedFile.type)) {
         toast.error("Invalid File Type", "Please select a valid image file (JPEG, PNG, or WEBP)");
         return;
       }
 
-      // Validate file size (5MB max)
       if (selectedFile.size > 5 * 1024 * 1024) {
         toast.error("File Too Large", "Image size should be less than 5MB");
         return;
@@ -60,7 +159,6 @@ const AddCommunity = ({ onClose, onSuccess }) => {
 
       setFile(selectedFile);
 
-      // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result);
@@ -73,7 +171,6 @@ const AddCommunity = ({ onClose, onSuccess }) => {
   const handleRemoveImage = () => {
     setFile(null);
     setPreviewUrl(null);
-    // Reset file input
     const fileInput = document.getElementById('community-image');
     if (fileInput) {
       fileInput.value = '';
@@ -83,11 +180,11 @@ const AddCommunity = ({ onClose, onSuccess }) => {
   // Validation rules
   const validateForm = () => {
     const newErrors = {
-      community_code: "",
       community_name: "",
-      location: "",
+      address1: "",
+      address2: "",
       city: "",
-      country: "",
+      country_code: "",
       manager_name: "",
       manager_contact: "",
       total_properties: "",
@@ -96,19 +193,6 @@ const AddCommunity = ({ onClose, onSuccess }) => {
     };
     let isValid = true;
 
-    // Community Code validation
-    if (!form.community_code.trim()) {
-      newErrors.community_code = "Community code is required";
-      isValid = false;
-    } else if (form.community_code.length < 3) {
-      newErrors.community_code = "Community code must be at least 3 characters";
-      isValid = false;
-    } else if (form.community_code.length > 50) {
-      newErrors.community_code = "Community code cannot exceed 50 characters";
-      isValid = false;
-    }
-
-    // Community Name validation
     if (!form.community_name.trim()) {
       newErrors.community_name = "Community name is required";
       isValid = false;
@@ -120,16 +204,19 @@ const AddCommunity = ({ onClose, onSuccess }) => {
       isValid = false;
     }
 
-    // Location validation
-    if (!form.location.trim()) {
-      newErrors.location = "Location is required";
+    if (!form.address1.trim()) {
+      newErrors.address1 = "Address is required";
       isValid = false;
-    } else if (form.location.length > 200) {
-      newErrors.location = "Location cannot exceed 200 characters";
+    } else if (form.address1.length > 200) {
+      newErrors.address1 = "Address cannot exceed 200 characters";
       isValid = false;
     }
 
-    // City validation
+    if (form.address2 && form.address2.length > 200) {
+      newErrors.address2 = "Address cannot exceed 200 characters";
+      isValid = false;
+    }
+
     if (!form.city.trim()) {
       newErrors.city = "City is required";
       isValid = false;
@@ -138,18 +225,15 @@ const AddCommunity = ({ onClose, onSuccess }) => {
       isValid = false;
     }
 
-    // Country validation
-    if (!form.country.trim()) {
-      newErrors.country = "Country is required";
+    if (!form.country_code) {
+      newErrors.country_code = "Country code is required";
       isValid = false;
     }
 
-    // Manager name validation - only letters and spaces
     if (form.manager_name) {
       const nameRegex = /^[A-Za-z\s]+$/;
       if (!nameRegex.test(form.manager_name.trim())) {
-        newErrors.manager_name =
-          "Manager name can only contain letters and spaces";
+        newErrors.manager_name = "Manager name can only contain letters and spaces";
         isValid = false;
       } else if (form.manager_name.trim().length > 100) {
         newErrors.manager_name = "Manager name cannot exceed 100 characters";
@@ -157,29 +241,30 @@ const AddCommunity = ({ onClose, onSuccess }) => {
       }
     }
 
-    // Manager Contact validation
     if (form.manager_contact) {
-      const phoneRegex = /^[0-9]{7,15}$/;
+      const phoneRegex = /^[0-9]+$/;
       if (!phoneRegex.test(form.manager_contact)) {
-        newErrors.manager_contact =
-          "Please enter a valid phone number (0-9 digits only)";
+        newErrors.manager_contact = "Please enter a valid phone number (digits only)";
         isValid = false;
+      } else {
+        const requiredDigits = getCurrentCountryDigits();
+        if (form.manager_contact.length !== requiredDigits) {
+          newErrors.manager_contact = `Phone number must be exactly ${requiredDigits} digits for ${selectedCountry?.country || 'this country'}`;
+          isValid = false;
+        }
       }
     }
 
-    // Total Properties validation
     if (form.total_properties && parseInt(form.total_properties) < 0) {
       newErrors.total_properties = "Total properties cannot be negative";
       isValid = false;
     }
 
-    // Total Units validation
     if (form.total_units && parseInt(form.total_units) < 0) {
       newErrors.total_units = "Total units cannot be negative";
       isValid = false;
     }
 
-    // Description validation
     if (form.description && form.description.length > 500) {
       newErrors.description = "Description cannot exceed 500 characters";
       isValid = false;
@@ -191,21 +276,19 @@ const AddCommunity = ({ onClose, onSuccess }) => {
 
   const validateField = (name, value) => {
     switch (name) {
-      case "community_code":
-        if (!value.trim()) return "Community code is required";
-        if (value.length < 3) return "Community code must be at least 3 characters";
-        if (value.length > 50) return "Community code cannot exceed 50 characters";
-        return "";
-
       case "community_name":
         if (!value.trim()) return "Community name is required";
         if (value.length < 3) return "Community name must be at least 3 characters";
         if (value.length > 150) return "Community name cannot exceed 150 characters";
         return "";
 
-      case "location":
-        if (!value.trim()) return "Location is required";
-        if (value.length > 200) return "Location cannot exceed 200 characters";
+      case "address1":
+        if (!value.trim()) return "Address is required";
+        if (value.length > 200) return "Address cannot exceed 200 characters";
+        return "";
+
+      case "address2":
+        if (value && value.length > 200) return "Address cannot exceed 200 characters";
         return "";
 
       case "city":
@@ -213,8 +296,8 @@ const AddCommunity = ({ onClose, onSuccess }) => {
         if (value.length > 100) return "City cannot exceed 100 characters";
         return "";
 
-      case "country":
-        if (!value.trim()) return "Country is required";
+      case "country_code":
+        if (!value) return "Country code is required";
         return "";
 
       case "manager_name":
@@ -232,9 +315,14 @@ const AddCommunity = ({ onClose, onSuccess }) => {
 
       case "manager_contact":
         if (value) {
-          const phoneRegex = /^[0-9]{7,15}$/;
+          const phoneRegex = /^[0-9]+$/;
           if (!phoneRegex.test(value))
-            return "Please enter a valid phone number (0-9 digits only)";
+            return "Please enter a valid phone number (digits only)";
+          
+          const requiredDigits = getCurrentCountryDigits();
+          if (value.length !== requiredDigits) {
+            return `Phone number must be exactly ${requiredDigits} digits for ${selectedCountry?.country || 'this country'}`;
+          }
         }
         return "";
 
@@ -271,6 +359,30 @@ const AddCommunity = ({ onClose, onSuccess }) => {
     });
   };
 
+  const handleCountryChange = (code) => {
+    setForm({
+      ...form,
+      country_code: code,
+      manager_contact: "",
+    });
+    
+    setErrors({
+      ...errors,
+      country_code: "",
+      manager_contact: "",
+    });
+    
+    setCountryDropdownOpen(false);
+    setCountrySearch("");
+  };
+
+  const handlePhoneChange = (value) => {
+    const requiredDigits = getCurrentCountryDigits();
+    const digitsOnly = value.replace(/\D/g, "");
+    const truncated = digitsOnly.slice(0, requiredDigits);
+    handleInputChange("manager_contact", truncated);
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) {
       toast.error("Validation Error", "Please fix the errors in the form before submitting.");
@@ -280,24 +392,54 @@ const AddCommunity = ({ onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      // Prepare FormData for file upload
+      // Generate a community code
+      const generateCommunityCode = () => {
+        const date = new Date();
+        const dateStr = date.toISOString().slice(0,10).replace(/-/g, '');
+        const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        return `COMM-${dateStr}-${randomNum}`;
+      };
+
+      // Get the country name from the selected country code
+      const selectedCountryName = selectedCountry?.country || 'UAE';
+      
+      // Get user ID
+      const userId = getCurrentUserId();
+
+      // Create FormData and append each field individually
       const formData = new FormData();
       
-      // Append all form fields
-      formData.append('community_code', form.community_code);
-      formData.append('community_name', form.community_name);
-      formData.append('location', form.location);
-      formData.append('city', form.city);
-      formData.append('country', form.country);
-      formData.append('manager_name', form.manager_name || '');
-      formData.append('manager_contact', form.manager_contact || '');
+      // Append all fields individually (not wrapped in 'data')
+      formData.append('community_code', generateCommunityCode());
+      formData.append('community_name', form.community_name.trim());
+      formData.append('address_line1', form.address1.trim());
+      formData.append('address_line2', form.address2?.trim() || '');
+      formData.append('city', form.city.trim());
+      formData.append('country', selectedCountryName);
+      formData.append('manager_name', form.manager_name?.trim() || '');
+      
+      // Combine country code and phone number for manager_contact
+      const fullPhoneNumber = form.manager_contact ? `${form.country_code}${form.manager_contact}` : '';
+      formData.append('manager_contact', fullPhoneNumber);
+      
       formData.append('total_properties', form.total_properties || '0');
       formData.append('total_units', form.total_units || '0');
-      formData.append('description', form.description || '');
+      formData.append('community_description', form.description?.trim() || '');
+      formData.append('created_by', userId || '');
       
       // Append file if selected
       if (file) {
         formData.append('profile_image', file);
+      }
+
+      // Log FormData contents for debugging
+      console.log("Sending FormData:");
+      for (let pair of formData.entries()) {
+        if (pair[0] === 'profile_image' && pair[1] instanceof File) {
+          console.log(pair[0] + ': File - ' + pair[1].name);
+        } else {
+          console.log(pair[0] + ': ' + pair[1]);
+        }
       }
 
       // Make API call
@@ -306,15 +448,23 @@ const AddCommunity = ({ onClose, onSuccess }) => {
         body: formData,
       });
 
-      const data = await response.json();
+      // Check if response is OK
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server error response:", errorText);
+        throw new Error(`Server responded with status ${response.status}: ${errorText}`);
+      }
 
-      if (response.ok) {
-        // Removed the toast.success from here to prevent double message
-        // Let the parent component handle the success message through onSuccess
+      const data = await response.json();
+      console.log("Server response:", data);
+
+      // Check the response format from your database function
+      if (data.success || (data.id && data.message)) {
+        toast.success("Success", "Community added successfully!");
         if (onSuccess) onSuccess(data);
         if (onClose) onClose();
       } else {
-        throw new Error(data.message || "Failed to create community");
+        throw new Error(data.error || data.message || "Failed to create community");
       }
     } catch (error) {
       console.error("Error creating community:", error);
@@ -329,13 +479,15 @@ const AddCommunity = ({ onClose, onSuccess }) => {
   };
 
   const isFormValid = () => {
-    return form.community_code.trim() !== "" &&
-      form.community_name.trim() !== "" &&
-      form.location.trim() !== "" &&
+    return form.community_name.trim() !== "" &&
+      form.address1.trim() !== "" &&
       form.city.trim() !== "" &&
-      form.country.trim() !== "" &&
+      form.country_code !== "" &&
       !hasErrors();
   };
+
+  // Get current country's digit requirement for display
+  const requiredDigits = getCurrentCountryDigits();
 
   return (
     <div
@@ -355,7 +507,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
               }}
             >
               <h3
-                className="text-sm font-medium mb-4"
+                className="text-sm font-medium mb-3"
                 style={{ color: themeUtils.getTextColor(true) }}
               >
                 Community Profile Picture
@@ -388,14 +540,14 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                 >
                   <Upload
                     size={32}
-                    className="mx-auto mb-3"
+                    className="mx-auto mb-2"
                     style={{ color: themeUtils.getTextColor(false, true) }}
                   />
                   <p
                     className="text-sm font-medium mb-1"
                     style={{ color: themeUtils.getTextColor(true) }}
                   >
-                    Click to upload image
+                    Click to upload
                   </p>
                   <p
                     className="text-xs"
@@ -417,55 +569,12 @@ const AddCommunity = ({ onClose, onSuccess }) => {
           </div>
 
           {/* Right Column: Form Fields */}
-          <div className="lg:col-span-2 space-y-5">
-            {/* Row 1: Community Code and Community Name */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Community Code */}
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label
-                    className="block text-sm font-medium"
-                    style={{ color: themeUtils.getTextColor(false) }}
-                  >
-                    Community Code *
-                  </label>
-                  <span
-                    className="text-xs"
-                    style={{ color: themeUtils.getTextColor(false, true) }}
-                  >
-                    {form.community_code.length}/50
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  value={form.community_code}
-                  onChange={(e) =>
-                    handleInputChange("community_code", e.target.value.toUpperCase())
-                  }
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.community_code
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : ""
-                    }`}
-                  style={{
-                    backgroundColor: themeUtils.getBgColor("input"),
-                    borderColor: errors.community_code
-                      ? "#ef4444"
-                      : themeUtils.getBorderColor(),
-                    color: themeUtils.getTextColor(true),
-                  }}
-                  placeholder="e.g. COM001"
-                  maxLength={50}
-                />
-                {errors.community_code && (
-                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                    <span>⚠</span> {errors.community_code}
-                  </p>
-                )}
-              </div>
-
+          <div className="lg:col-span-2 space-y-2">
+            {/* Row 1: Community Name and City (2 columns) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {/* Community Name */}
               <div>
-                <div className="flex justify-between items-center mb-1.5">
+                <div className="flex justify-between items-center mb-1">
                   <label
                     className="block text-sm font-medium"
                     style={{ color: themeUtils.getTextColor(false) }}
@@ -473,7 +582,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                     Community Name *
                   </label>
                   <span
-                    className="text-xs"
+                    className="text-[10px]"
                     style={{ color: themeUtils.getTextColor(false, true) }}
                   >
                     {form.community_name.length}/150
@@ -485,10 +594,11 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   onChange={(e) =>
                     handleInputChange("community_name", e.target.value)
                   }
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.community_name
+                  className={`w-full px-3 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                    errors.community_name
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : ""
-                    }`}
+                  }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     borderColor: errors.community_name
@@ -500,63 +610,15 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   maxLength={150}
                 />
                 {errors.community_name && (
-                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                  <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
                     <span>⚠</span> {errors.community_name}
                   </p>
                 )}
               </div>
-            </div>
 
-            {/* Row 2: Location */}
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label
-                    className="block text-sm font-medium"
-                    style={{ color: themeUtils.getTextColor(false) }}
-                  >
-                    Location *
-                  </label>
-                  <span
-                    className="text-xs"
-                    style={{ color: themeUtils.getTextColor(false, true) }}
-                  >
-                    {form.location.length}/200
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  value={form.location}
-                  onChange={(e) =>
-                    handleInputChange("location", e.target.value)
-                  }
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.location
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : ""
-                    }`}
-                  style={{
-                    backgroundColor: themeUtils.getBgColor("input"),
-                    borderColor: errors.location
-                      ? "#ef4444"
-                      : themeUtils.getBorderColor(),
-                    color: themeUtils.getTextColor(true),
-                  }}
-                  placeholder="e.g. Near Sahara Mall"
-                  maxLength={200}
-                />
-                {errors.location && (
-                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                    <span>⚠</span> {errors.location}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Row 3: City and Country */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* City */}
               <div>
-                <div className="flex justify-between items-center mb-1.5">
+                <div className="flex justify-between items-center mb-1">
                   <label
                     className="block text-sm font-medium"
                     style={{ color: themeUtils.getTextColor(false) }}
@@ -564,7 +626,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                     City *
                   </label>
                   <span
-                    className="text-xs"
+                    className="text-[10px]"
                     style={{ color: themeUtils.getTextColor(false, true) }}
                   >
                     {form.city.length}/100
@@ -576,10 +638,11 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   onChange={(e) =>
                     handleInputChange("city", e.target.value)
                   }
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.city
+                  className={`w-full px-3 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                    errors.city
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : ""
-                    }`}
+                  }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     borderColor: errors.city
@@ -591,58 +654,110 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   maxLength={100}
                 />
                 {errors.city && (
-                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                  <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
                     <span>⚠</span> {errors.city}
-                  </p>
-                )}
-              </div>
-
-              {/* Country */}
-              <div>
-                <label
-                  className="block text-sm font-medium mb-1.5"
-                  style={{ color: themeUtils.getTextColor(false) }}
-                >
-                  Country *
-                </label>
-                <select
-                  value={form.country}
-                  onChange={(e) =>
-                    handleInputChange("country", e.target.value)
-                  }
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all ${errors.country
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                      : ""
-                    }`}
-                  style={{
-                    backgroundColor: themeUtils.getBgColor("input"),
-                    borderColor: errors.country
-                      ? "#ef4444"
-                      : themeUtils.getBorderColor(),
-                    color: themeUtils.getTextColor(true),
-                  }}
-                >
-                  <option value="UAE">UAE</option>
-                  <option value="Saudi Arabia">Saudi Arabia</option>
-                  <option value="Kuwait">Kuwait</option>
-                  <option value="Qatar">Qatar</option>
-                  <option value="Bahrain">Bahrain</option>
-                  <option value="Oman">Oman</option>
-                </select>
-                {errors.country && (
-                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                    <span>⚠</span> {errors.country}
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Row 4: Total Properties and Total Units */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Row 2: Address 1 and Address 2 (2 columns) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {/* Address 1 */}
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label
+                    className="block text-sm font-medium"
+                    style={{ color: themeUtils.getTextColor(false) }}
+                  >
+                    Address 1 *
+                  </label>
+                  <span
+                    className="text-[10px]"
+                    style={{ color: themeUtils.getTextColor(false, true) }}
+                  >
+                    {form.address1.length}/200
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={form.address1}
+                  onChange={(e) =>
+                    handleInputChange("address1", e.target.value)
+                  }
+                  className={`w-full px-3 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                    errors.address1
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
+                  }`}
+                  style={{
+                    backgroundColor: themeUtils.getBgColor("input"),
+                    borderColor: errors.address1
+                      ? "#ef4444"
+                      : themeUtils.getBorderColor(),
+                    color: themeUtils.getTextColor(true),
+                  }}
+                  placeholder="Street address, P.O. Box"
+                  maxLength={200}
+                />
+                {errors.address1 && (
+                  <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
+                    <span>⚠</span> {errors.address1}
+                  </p>
+                )}
+              </div>
+
+              {/* Address 2 */}
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label
+                    className="block text-sm font-medium"
+                    style={{ color: themeUtils.getTextColor(false) }}
+                  >
+                    Address 2
+                  </label>
+                  <span
+                    className="text-[10px]"
+                    style={{ color: themeUtils.getTextColor(false, true) }}
+                  >
+                    {form.address2.length}/200
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={form.address2}
+                  onChange={(e) =>
+                    handleInputChange("address2", e.target.value)
+                  }
+                  className={`w-full px-3 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                    errors.address2
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
+                  }`}
+                  style={{
+                    backgroundColor: themeUtils.getBgColor("input"),
+                    borderColor: errors.address2
+                      ? "#ef4444"
+                      : themeUtils.getBorderColor(),
+                    color: themeUtils.getTextColor(true),
+                  }}
+                  placeholder="Apartment, suite, unit, building, floor, etc."
+                  maxLength={200}
+                />
+                {errors.address2 && (
+                  <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
+                    <span>⚠</span> {errors.address2}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Row 3: Total Properties and Total Units */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {/* Total Properties */}
               <div>
                 <label
-                  className="block text-sm font-medium mb-1.5"
+                  className="block text-sm font-medium mb-1"
                   style={{ color: themeUtils.getTextColor(false) }}
                 >
                   Total Properties
@@ -654,10 +769,11 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                     handleInputChange("total_properties", e.target.value)
                   }
                   min="0"
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.total_properties
+                  className={`w-full px-3 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                    errors.total_properties
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : ""
-                    }`}
+                  }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     borderColor: errors.total_properties
@@ -668,7 +784,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   placeholder="0"
                 />
                 {errors.total_properties && (
-                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                  <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
                     <span>⚠</span> {errors.total_properties}
                   </p>
                 )}
@@ -677,7 +793,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
               {/* Total Units */}
               <div>
                 <label
-                  className="block text-sm font-medium mb-1.5"
+                  className="block text-sm font-medium mb-1"
                   style={{ color: themeUtils.getTextColor(false) }}
                 >
                   Total Units
@@ -689,10 +805,11 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                     handleInputChange("total_units", e.target.value)
                   }
                   min="0"
-                  className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.total_units
+                  className={`w-full px-3 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                    errors.total_units
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                       : ""
-                    }`}
+                  }`}
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     borderColor: errors.total_units
@@ -703,7 +820,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   placeholder="0"
                 />
                 {errors.total_units && (
-                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                  <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
                     <span>⚠</span> {errors.total_units}
                   </p>
                 )}
@@ -712,7 +829,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
 
             {/* Description */}
             <div>
-              <div className="flex justify-between items-center mb-1.5">
+              <div className="flex justify-between items-center mb-1">
                 <label
                   className="block text-sm font-medium"
                   style={{ color: themeUtils.getTextColor(false) }}
@@ -720,22 +837,23 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   Community Description
                 </label>
                 <span
-                  className="text-xs"
+                  className="text-[10px]"
                   style={{ color: themeUtils.getTextColor(false, true) }}
                 >
                   {form.description.length}/500
                 </span>
               </div>
               <textarea
-                rows={3}
+                rows={2}
                 value={form.description}
                 onChange={(e) =>
                   handleInputChange("description", e.target.value)
                 }
-                className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all resize-none placeholder:text-gray-400 ${errors.description
+                className={`w-full px-3 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all resize-none placeholder:text-gray-400 ${
+                  errors.description
                     ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                     : ""
-                  }`}
+                }`}
                 style={{
                   backgroundColor: themeUtils.getBgColor("input"),
                   borderColor: errors.description
@@ -747,25 +865,25 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                 maxLength={500}
               />
               {errors.description && (
-                <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
                   <span>⚠</span> {errors.description}
                 </p>
               )}
             </div>
 
             {/* Manager Details */}
-            <div className="pt-2">
+            <div className="pt-1">
               <h3
-                className="text-sm font-semibold mb-4 opacity-70 uppercase tracking-wider"
+                className="text-sm font-semibold mb-2 opacity-70 uppercase tracking-wider"
                 style={{ color: themeUtils.getTextColor(true) }}
               >
                 Manager Details (Optional)
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1.5"
+                    className="block text-sm font-medium mb-1"
                     style={{ color: themeUtils.getTextColor(false) }}
                   >
                     Full Name
@@ -776,10 +894,11 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                     onChange={(e) =>
                       handleInputChange("manager_name", e.target.value)
                     }
-                    className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.manager_name
+                    className={`w-full px-3 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                      errors.manager_name
                         ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
                         : ""
-                      }`}
+                    }`}
                     style={{
                       backgroundColor: themeUtils.getBgColor("input"),
                       borderColor: errors.manager_name
@@ -791,7 +910,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                     maxLength={100}
                   />
                   {errors.manager_name && (
-                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                    <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
                       <span>⚠</span> {errors.manager_name}
                     </p>
                   )}
@@ -799,43 +918,137 @@ const AddCommunity = ({ onClose, onSuccess }) => {
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1.5"
+                    className="block text-sm font-medium mb-1"
                     style={{ color: themeUtils.getTextColor(false) }}
                   >
                     Contact Number
                   </label>
-                  <input
-                    type="tel"
-                    value={form.manager_contact}
-                    onChange={(e) => {
-                      const val = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 15);
-                      handleInputChange("manager_contact", val);
-                    }}
-                    className={`w-full px-4 py-2.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${errors.manager_contact
-                        ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                        : ""
-                      }`}
-                    style={{
-                      backgroundColor: themeUtils.getBgColor("input"),
-                      borderColor: errors.manager_contact
-                        ? "#ef4444"
-                        : themeUtils.getBorderColor(),
-                      color: themeUtils.getTextColor(true),
-                    }}
-                    placeholder="501234567"
-                  />
+                  <div className="relative">
+                    <div className="flex gap-1">
+                      {/* Custom Country Code Dropdown */}
+                      <div className="relative w-20">
+                        <button
+                          type="button"
+                          onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                          className={`w-full px-2 py-1.5 text-sm rounded-lg border flex items-center justify-between ${
+                            errors.country_code
+                              ? "border-red-500"
+                              : ""
+                          }`}
+                          style={{
+                            backgroundColor: themeUtils.getBgColor("input"),
+                            borderColor: errors.country_code
+                              ? "#ef4444"
+                              : themeUtils.getBorderColor(),
+                            color: themeUtils.getTextColor(true),
+                          }}
+                        >
+                          <span className="truncate">
+                            {selectedCountry ? selectedCountry.code : "+971"}
+                          </span>
+                          <ChevronDown size={14} className={`transition-transform ${countryDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {countryDropdownOpen && (
+                          <div
+                            className="absolute z-50 mt-1 w-72 rounded-lg border shadow-lg"
+                            style={{
+                              backgroundColor: themeUtils.getBgColor("default"),
+                              borderColor: themeUtils.getBorderColor(),
+                            }}
+                          >
+                            {/* Search Input */}
+                            <div className="p-2 border-b" style={{ borderColor: themeUtils.getBorderColor() }}>
+                              <div className="relative">
+                                <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2" style={{ color: themeUtils.getTextColor(false, true) }} />
+                                <input
+                                  type="text"
+                                  value={countrySearch}
+                                  onChange={(e) => setCountrySearch(e.target.value)}
+                                  placeholder="Search country..."
+                                  className="w-full pl-7 pr-3 py-1.5 text-xs rounded-lg border"
+                                  style={{
+                                    backgroundColor: themeUtils.getBgColor("input"),
+                                    borderColor: themeUtils.getBorderColor(),
+                                    color: themeUtils.getTextColor(true),
+                                  }}
+                                  autoFocus
+                                />
+                              </div>
+                            </div>
+
+                            {/* Country List */}
+                            <div className="max-h-60 overflow-y-auto">
+                              {filteredCountries.length > 0 ? (
+                                filteredCountries.map((country) => (
+                                  <button
+                                    key={country.code}
+                                    type="button"
+                                    className="w-full px-3 py-2 text-left hover:bg-opacity-10 hover:bg-gray-500 transition-colors flex items-center justify-between"
+                                    style={{
+                                      backgroundColor: form.country_code === country.code ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                                      color: themeUtils.getTextColor(true),
+                                    }}
+                                    onClick={() => handleCountryChange(country.code)}
+                                  >
+                                    <span>
+                                      <span className="font-medium mr-2">{country.code}</span>
+                                      <span className="text-xs opacity-70">{country.country}</span>
+                                      <span className="text-[10px] ml-2 opacity-50">({country.digits} digits)</span>
+                                    </span>
+                                    {form.country_code === country.code && (
+                                      <span className="text-blue-500">✓</span>
+                                    )}
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="px-3 py-4 text-center text-xs" style={{ color: themeUtils.getTextColor(false, true) }}>
+                                  No countries found
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Phone Number Input */}
+                      <input
+                        type="tel"
+                        value={form.manager_contact}
+                        onChange={(e) => handlePhoneChange(e.target.value)}
+                        className={`flex-1 px-3 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                          errors.manager_contact
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                            : ""
+                        }`}
+                        style={{
+                          backgroundColor: themeUtils.getBgColor("input"),
+                          borderColor: errors.manager_contact
+                            ? "#ef4444"
+                            : themeUtils.getBorderColor(),
+                          color: themeUtils.getTextColor(true),
+                        }}
+                        placeholder={`${requiredDigits} digits`}
+                        maxLength={requiredDigits}
+                      />
+                    </div>
+                  </div>
                   {errors.manager_contact && (
-                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                    <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
                       <span>⚠</span> {errors.manager_contact}
                     </p>
                   )}
+                  {errors.country_code && (
+                    <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
+                      <span>⚠</span> {errors.country_code}
+                    </p>
+                  )}
                   <p
-                    className="mt-1 text-xs"
+                    className="mt-0.5 text-[10px]"
                     style={{ color: themeUtils.getTextColor(false, true) }}
                   >
-                    Enter digits only (e.g., 501234567)
+                    Enter {requiredDigits} digits for {selectedCountry?.country || 'UAE'}
                   </p>
                 </div>
               </div>
@@ -846,28 +1059,28 @@ const AddCommunity = ({ onClose, onSuccess }) => {
 
       {/* Footer */}
       <div
-        className="flex items-center justify-between gap-3 p-5 border-t"
+        className="flex items-center justify-between gap-3 p-3 border-t"
         style={{ borderColor: themeUtils.getBorderColor() }}
       >
         <div
-          className="text-sm"
+          className="text-[10px]"
           style={{ color: themeUtils.getTextColor(false, true) }}
         >
           * Required fields
           {hasErrors() && (
             <span className="ml-2 text-red-500">
-              Please fix {Object.values(errors).filter((e) => e).length}{" "}
-              error(s) above
+              {Object.values(errors).filter((e) => e).length} error(s)
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button
             variant="secondary"
             onClick={onClose}
             disabled={loading}
             themeUtils={themeUtils}
+            size="sm"
           >
             Cancel
           </Button>
@@ -877,6 +1090,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
             loading={loading}
             disabled={loading || !isFormValid()}
             themeUtils={themeUtils}
+            size="sm"
             className={!isFormValid() ? "opacity-50 cursor-not-allowed" : ""}
           >
             {loading ? "Creating..." : "Submit"}

@@ -173,11 +173,8 @@ const ListCommunity = () => {
   const exportCSV = () => {
     const headers = [
       "Sr. No",
-      "Community Code",
       "Community Name",
-      "Location",
       "City",
-      "Country",
       "Community Manager",
       "Manager Contact",
       "Properties",
@@ -189,11 +186,8 @@ const ListCommunity = () => {
       ...filteredCommunities.map((c, i) =>
         [
           i + 1,
-          `"${c.community_code?.replace(/"/g, '""') || ""}"`,
           `"${c.community_name?.replace(/"/g, '""') || ""}"`,
-          `"${c.location?.replace(/"/g, '""') || ""}"`,
           `"${c.city?.replace(/"/g, '""') || ""}"`,
-          `"${c.country?.replace(/"/g, '""') || "UAE"}"`,
           `"${c.manager_name?.replace(/"/g, '""') || ""}"`,
           `"${c.manager_contact?.toString().replace(/"/g, '""') || ""}"`,
           c.total_properties || 0,
@@ -236,12 +230,8 @@ const ListCommunity = () => {
   /* ================= TABLE COLUMNS ================= */
   const tableHeaders = [
     "Sr. No",
-    "Profile",
-    "Community Code",
     "Community Name",
-    "Location",
     "City",
-    "Country",
     "Community Manager",
     "Manager Contact",
     "Properties",
@@ -260,35 +250,6 @@ const ListCommunity = () => {
           : (currentPage - 1) * perPage + index + 1}
       </td>
       <td
-        className="px-4 py-1.5 text-sm text-center"
-        style={{ color: themeUtils.getTextColor(true) }}
-      >
-        <div className="flex justify-center">
-          <img
-            src={community.profile_image 
-              ? `${baseURL}${community.profile_image}` 
-              : `https://ui-avatars.com/api/?name=${encodeURIComponent(community.community_name || 'Community')}&background=6366f1&color=fff&size=40&bold=true`}
-            alt={community.community_name || "Community"}
-            className="w-8 h-8 rounded-full object-cover border"
-            style={{
-              borderColor: "#6366f1",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-            }}
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(community.community_name || 'Community')}&background=6366f1&color=fff&size=40&bold=true`;
-            }}
-          />
-        </div>
-      </td>
-      <td
-        className="px-4 py-1.5 text-sm text-center truncate max-w-[150px]"
-        style={{ color: themeUtils.getTextColor(true) }}
-        title={community.community_code || "-"}
-      >
-        {truncateText(community.community_code)}
-      </td>
-      <td
         className="px-4 py-1 text-sm text-left truncate max-w-[200px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.community_name || "-"}
@@ -296,25 +257,11 @@ const ListCommunity = () => {
         {truncateText(community.community_name)}
       </td>
       <td
-        className="px-4 py-1.5 text-sm text-left truncate max-w-[200px]"
-        style={{ color: themeUtils.getTextColor(true) }}
-        title={community.location || "-"}
-      >
-        {truncateText(community.location)}
-      </td>
-      <td
         className="px-4 py-1.5 text-sm text-left truncate max-w-[150px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.city || "-"}
       >
         {truncateText(community.city)}
-      </td>
-      <td
-        className="px-4 py-1.5 text-sm text-left truncate max-w-[150px]"
-        style={{ color: themeUtils.getTextColor(true) }}
-        title={community.country || "UAE"}
-      >
-        {truncateText(community.country || "UAE")}
       </td>
       <td
         className="px-4 py-1.5 text-sm text-left truncate max-w-[200px]"
