@@ -1,7 +1,7 @@
 // pages/Property/EditProperty.js
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Upload, X, Pencil } from "lucide-react";
+import { Upload, X, ChevronDown, Search, Pencil } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
 import { useToast } from "../../../../ui/common/CostumeTost";
 import Button from "../../../../ui/Common/Button";
@@ -24,9 +24,11 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
   const [saving, setSaving] = useState(false);
   const [communities, setCommunities] = useState([]);
   const [loadingCommunities, setLoadingCommunities] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [existingImage, setExistingImage] = useState(null);
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
 
   // Base URL for API
   const baseURL = propBaseURL || API_URL_PROPERTY || "http://192.168.1.39:5000";
@@ -35,20 +37,138 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
   // Check if modal mode
   const isModal = !!propProperty || !!onClose;
 
+  // Country codes with digit validation rules
+  const countryCodes = [
+    { code: "+971", country: "UAE", digits: 9, search: "uae united arab emirates" },
+    { code: "+966", country: "Saudi Arabia", digits: 9, search: "saudi arabia ksa" },
+    { code: "+965", country: "Kuwait", digits: 8, search: "kuwait" },
+    { code: "+974", country: "Qatar", digits: 8, search: "qatar" },
+    { code: "+973", country: "Bahrain", digits: 8, search: "bahrain" },
+    { code: "+968", country: "Oman", digits: 8, search: "oman" },
+    { code: "+20", country: "Egypt", digits: 10, search: "egypt" },
+    { code: "+962", country: "Jordan", digits: 9, search: "jordan" },
+    { code: "+961", country: "Lebanon", digits: 8, search: "lebanon" },
+    { code: "+967", country: "Yemen", digits: 9, search: "yemen" },
+    { code: "+964", country: "Iraq", digits: 10, search: "iraq" },
+    { code: "+963", country: "Syria", digits: 9, search: "syria" },
+    { code: "+92", country: "Pakistan", digits: 10, search: "pakistan pak" },
+    { code: "+94", country: "Sri Lanka", digits: 9, search: "sri lanka" },
+    { code: "+880", country: "Bangladesh", digits: 10, search: "bangladesh" },
+    { code: "+60", country: "Malaysia", digits: 9, search: "malaysia" },
+    { code: "+65", country: "Singapore", digits: 8, search: "singapore" },
+    { code: "+62", country: "Indonesia", digits: 10, search: "indonesia" },
+    { code: "+63", country: "Philippines", digits: 10, search: "philippines" },
+    { code: "+66", country: "Thailand", digits: 9, search: "thailand" },
+    { code: "+84", country: "Vietnam", digits: 9, search: "vietnam" },
+    { code: "+44", country: "United Kingdom", digits: 10, search: "uk united kingdom britain england" },
+    { code: "+1", country: "USA/Canada", digits: 10, search: "usa united states america canada" },
+    { code: "+33", country: "France", digits: 9, search: "france" },
+    { code: "+49", country: "Germany", digits: 10, search: "germany" },
+    { code: "+39", country: "Italy", digits: 10, search: "italy" },
+    { code: "+34", country: "Spain", digits: 9, search: "spain" },
+    { code: "+31", country: "Netherlands", digits: 9, search: "netherlands holland" },
+    { code: "+32", country: "Belgium", digits: 8, search: "belgium" },
+    { code: "+41", country: "Switzerland", digits: 9, search: "switzerland" },
+    { code: "+43", country: "Austria", digits: 10, search: "austria" },
+    { code: "+46", country: "Sweden", digits: 9, search: "sweden" },
+    { code: "+47", country: "Norway", digits: 8, search: "norway" },
+    { code: "+45", country: "Denmark", digits: 8, search: "denmark" },
+    { code: "+358", country: "Finland", digits: 9, search: "finland" },
+    { code: "+353", country: "Ireland", digits: 9, search: "ireland" },
+    { code: "+351", country: "Portugal", digits: 9, search: "portugal" },
+    { code: "+30", country: "Greece", digits: 10, search: "greece" },
+    { code: "+90", country: "Turkey", digits: 10, search: "turkey" },
+    { code: "+7", country: "Russia", digits: 10, search: "russia" },
+    { code: "+380", country: "Ukraine", digits: 9, search: "ukraine" },
+    { code: "+48", country: "Poland", digits: 9, search: "poland" },
+    { code: "+420", country: "Czech Republic", digits: 9, search: "czech republic" },
+    { code: "+36", country: "Hungary", digits: 9, search: "hungary" },
+    { code: "+40", country: "Romania", digits: 9, search: "romania" },
+    { code: "+359", country: "Bulgaria", digits: 9, search: "bulgaria" },
+    { code: "+381", country: "Serbia", digits: 9, search: "serbia" },
+    { code: "+385", country: "Croatia", digits: 9, search: "croatia" },
+    { code: "+86", country: "China", digits: 11, search: "china" },
+    { code: "+852", country: "Hong Kong", digits: 8, search: "hong kong" },
+    { code: "+853", country: "Macau", digits: 8, search: "macau" },
+    { code: "+886", country: "Taiwan", digits: 9, search: "taiwan" },
+    { code: "+81", country: "Japan", digits: 10, search: "japan" },
+    { code: "+82", country: "South Korea", digits: 10, search: "south korea korea" },
+    { code: "+61", country: "Australia", digits: 9, search: "australia" },
+    { code: "+64", country: "New Zealand", digits: 9, search: "new zealand" },
+    { code: "+27", country: "South Africa", digits: 9, search: "south africa" },
+    { code: "+234", country: "Nigeria", digits: 10, search: "nigeria" },
+    { code: "+254", country: "Kenya", digits: 9, search: "kenya" },
+    { code: "+212", country: "Morocco", digits: 9, search: "morocco" },
+    { code: "+216", country: "Tunisia", digits: 8, search: "tunisia" },
+    { code: "+213", country: "Algeria", digits: 9, search: "algeria" },
+  ];
+
   const [form, setForm] = useState({
     community_id: "",
-    community_name: "",
     property_name: "",
-    total_units: "",
     address_line1: "",
     address_line2: "",
-    country: "",
     city: "",
-    location: "",
-    zip_code: ""
+    country_code: "+971",
+    manager_name: "",
+    manager_contact: "",
+    total_units: "",
+    property_description: "",
   });
 
-  // Fetch communities from API
+  // Validation errors state
+  const [errors, setErrors] = useState({
+    community_id: "",
+    property_name: "",
+    address_line1: "",
+    address_line2: "",
+    city: "",
+    country_code: "",
+    manager_name: "",
+    manager_contact: "",
+    total_units: "",
+    property_description: "",
+  });
+
+  // Get current user ID from localStorage
+  const getCurrentUserId = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.id || user.user_id || null;
+      }
+    } catch (e) {
+      console.error("Error getting user ID:", e);
+    }
+    return null;
+  };
+
+  // Get current country's digit requirement
+  const getCurrentCountryDigits = () => {
+    const country = countryCodes.find(c => c.code === form.country_code);
+    return country ? country.digits : 10;
+  };
+
+  // Filter countries based on search
+  const filteredCountries = countrySearch
+    ? countryCodes.filter(
+        (c) =>
+          c.country.toLowerCase().includes(countrySearch.toLowerCase()) ||
+          c.code.includes(countrySearch) ||
+          c.search?.toLowerCase().includes(countrySearch.toLowerCase())
+      )
+    : countryCodes;
+
+  // Get selected country display
+  const selectedCountry = countryCodes.find((c) => c.code === form.country_code);
+
+  // Get selected community
+  const selectedCommunity = communities.find(
+    (c) => c.community_id === parseInt(form.community_id)
+  );
+
+  // Fetch communities
   useEffect(() => {
     const fetchCommunities = async () => {
       try {
@@ -57,13 +177,12 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
         const data = await response.json();
 
         if (response.ok) {
-          setCommunities(data);
+          const communityList = Array.isArray(data) ? data : data.data || [];
+          setCommunities(communityList);
         } else {
-          console.error("Error fetching communities:", data);
-          toast.error("Error", "Failed to load communities");
+          toast.error("Error", data.message || "Failed to load communities");
         }
       } catch (error) {
-        console.error("Error fetching communities:", error);
         toast.error("Error", "Failed to load communities. Please check your connection.");
       } finally {
         setLoadingCommunities(false);
@@ -73,7 +192,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
     fetchCommunities();
   }, [communityBaseURL]);
 
-  /* ================= GET PROPERTY DATA ================= */
+  // Fetch property data
   useEffect(() => {
     const fetchProperty = async () => {
       // Get property ID
@@ -106,7 +225,8 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
         const data = await response.json();
 
         if (response.ok) {
-          populateForm(data);
+          const propertyData = data.data || data;
+          populateForm(propertyData);
         } else {
           throw new Error(data.message || "Failed to load property details");
         }
@@ -125,62 +245,167 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
   const populateForm = (property) => {
     console.log("Populating form with property:", property);
 
+    // Extract contact number and country code
+    let contactNumber = "";
+    let countryCode = "+971";
+    
+    if (property.manager_contact) {
+      const contactStr = property.manager_contact.toString();
+      const foundCountry = countryCodes.find(c => contactStr.startsWith(c.code.replace('+', '')) || contactStr.startsWith(c.code));
+      if (foundCountry) {
+        countryCode = foundCountry.code;
+        contactNumber = contactStr.replace(foundCountry.code.replace('+', ''), '').replace(foundCountry.code, '');
+      } else if (contactStr.startsWith("971")) {
+        countryCode = "+971";
+        contactNumber = contactStr.substring(3);
+      } else {
+        contactNumber = contactStr;
+      }
+    }
+
     setForm({
       community_id: property.community_id || "",
-      community_name: property.community_name || "",
       property_name: property.property_name || "",
-      total_units: property.total_units?.toString() || "",
-      address_line1: property.address_line1 || "",
+      address_line1: property.address_line1 || property.location || "",
       address_line2: property.address_line2 || "",
-      country: property.country || "UAE",
-      city: property.city || "Dubai",
-      location: property.location || property.address_line1 || "",
-      zip_code: property.zip_code || "",
+      city: property.city || "",
+      country_code: countryCode,
+      manager_name: property.manager_name || "",
+      manager_contact: contactNumber,
+      total_units: property.total_units?.toString() || "",
+      property_description: property.property_description || property.description || "",
     });
 
-    // Set image preview if property has an image
+    // Set existing image if available
     if (property.property_image) {
       setExistingImage(`${baseURL}${property.property_image}`);
-      setImagePreview(`${baseURL}${property.property_image}`);
+      setPreviewUrl(`${baseURL}${property.property_image}`);
     }
   };
 
-  // Handle image selection
-  const handleImageSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type
+  // Handle file selection
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-      if (!validTypes.includes(file.type)) {
-        toast.error("Invalid File Type", "Please upload a valid image file (JPG, PNG, WEBP)");
+      if (!validTypes.includes(selectedFile.type)) {
+        toast.error("Invalid File Type", "Please select a valid image file (JPEG, PNG, or WEBP)");
         return;
       }
 
-      // Validate file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
+      if (selectedFile.size > 5 * 1024 * 1024) {
         toast.error("File Too Large", "Image size should be less than 5MB");
         return;
       }
 
-      setSelectedImage(file);
+      setFile(selectedFile);
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result);
+        setPreviewUrl(reader.result);
         setExistingImage(null);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(selectedFile);
     }
   };
 
-  // Handle image removal
-  const handleImageRemove = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
+  // Remove selected image
+  const handleRemoveImage = () => {
+    setFile(null);
+    setPreviewUrl(null);
     setExistingImage(null);
-    const fileInput = document.getElementById('property-image-upload');
+    const fileInput = document.getElementById('property-image');
     if (fileInput) {
       fileInput.value = '';
     }
+  };
+
+  // Validation rules
+  const validateField = (name, value) => {
+    switch (name) {
+      case "community_id":
+        if (!value) return "Community is required";
+        return "";
+      case "property_name":
+        if (!value.trim()) return "Property name is required";
+        return "";
+      case "country_code":
+        if (!value) return "Country code is required";
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {
+      community_id: "",
+      property_name: "",
+      address_line1: "",
+      address_line2: "",
+      city: "",
+      country_code: "",
+      manager_name: "",
+      manager_contact: "",
+      total_units: "",
+      property_description: "",
+    };
+    let isValid = true;
+
+    if (!form.community_id) {
+      newErrors.community_id = "Community is required";
+      isValid = false;
+    }
+
+    if (!form.property_name.trim()) {
+      newErrors.property_name = "Property name is required";
+      isValid = false;
+    }
+
+    if (!form.country_code) {
+      newErrors.country_code = "Country code is required";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleInputChange = (field, value) => {
+    setForm({
+      ...form,
+      [field]: value,
+    });
+
+    const error = validateField(field, value);
+    setErrors({
+      ...errors,
+      [field]: error,
+    });
+  };
+
+  const handleCountryChange = (code) => {
+    setForm({
+      ...form,
+      country_code: code,
+      manager_contact: "",
+    });
+    
+    setErrors({
+      ...errors,
+      country_code: "",
+      manager_contact: "",
+    });
+    
+    setCountryDropdownOpen(false);
+    setCountrySearch("");
+  };
+
+  const handlePhoneChange = (value) => {
+    const requiredDigits = getCurrentCountryDigits();
+    const digitsOnly = value.replace(/\D/g, "");
+    const truncated = digitsOnly.slice(0, requiredDigits);
+    handleInputChange("manager_contact", truncated);
   };
 
   /* ================= UPDATE PROPERTY ================= */
@@ -198,31 +423,47 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
       return;
     }
 
-    // Validate required fields (Property Name is required)
-    if (!form.property_name.trim()) {
-      toast.error("Validation Error", "Property Name is required.");
+    if (!validateForm()) {
+      toast.error("Validation Error", "Please fix the errors in the form before submitting.");
       return;
     }
 
     setSaving(true);
 
     try {
+      // Get the country name from the selected country code
+      const selectedCountryName = selectedCountry?.country || 'UAE';
+      
+      // Get user ID
+      const userId = getCurrentUserId();
+
       // Create FormData for API call
       const formData = new FormData();
       
-      formData.append("community_id", form.community_id || "");
-      formData.append("property_name", form.property_name.trim());
-      formData.append("total_units", form.total_units || "0");
-      formData.append("address_line1", form.address_line1 || "");
-      formData.append("address_line2", form.address_line2 || "");
-      formData.append("country", form.country || "UAE");
-      formData.append("city", form.city || "Dubai");
-      formData.append("zip_code", form.zip_code || "");
-      formData.append("location", form.location || form.address_line1 || "");
+      // Prepare JSON data matching the structure expected by your backend
+      const jsonData = {
+        community_id: parseInt(form.community_id),
+        property_name: form.property_name.trim(),
+        address_line1: form.address_line1.trim() || null,
+        address_line2: form.address_line2?.trim() || null,
+        city: form.city.trim() || null,
+        country: selectedCountryName,
+        manager_name: form.manager_name?.trim() || null,
+        manager_contact: form.manager_contact ? `${form.country_code}${form.manager_contact}` : null,
+        total_units: form.total_units ? parseInt(form.total_units) : 0,
+        property_description: form.property_description?.trim() || null,
+        updated_by: userId
+      };
+
+      console.log("Updating property with data:", jsonData);
+      console.log("Property ID:", propertyId);
+
+      // Append the JSON data as a string
+      formData.append('data', JSON.stringify(jsonData));
       
-      // Append new image if selected
-      if (selectedImage) {
-        formData.append("property_image", selectedImage);
+      // Append file if selected
+      if (file) {
+        formData.append('property_image', file);
       }
 
       // Make API call
@@ -232,17 +473,24 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
       });
 
       const data = await response.json();
+      console.log("Server response:", data);
 
       if (response.ok) {
         toast.success("Success", "Property updated successfully!");
 
+        // Call onSuccess callback to refresh the list
+        if (onSuccess) {
+          onSuccess(data);
+        }
+        
+        // Close the drawer after a short delay
         setTimeout(() => {
-          if (isModal && onClose) onClose();
-          if (onSuccess) onSuccess(data);
-          if (!isModal) navigate("/community-management/Property", { replace: true });
+          if (onClose) {
+            onClose();
+          }
         }, 1000);
       } else {
-        throw new Error(data.message || "Failed to update property");
+        throw new Error(data.message || data.error || "Failed to update property");
       }
     } catch (error) {
       console.error("Update error:", error);
@@ -259,6 +507,19 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
       navigate("/community-management/Property");
     }
   };
+
+  const hasErrors = () => {
+    return Object.values(errors).some((error) => error !== "");
+  };
+
+  const isFormValid = () => {
+    return form.community_id !== "" &&
+      form.property_name.trim() !== "" &&
+      form.country_code !== "" &&
+      !hasErrors();
+  };
+
+  const requiredDigits = getCurrentCountryDigits();
 
   if (loading) {
     return (
@@ -301,127 +562,122 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
 
       <CardContent>
         <div className="space-y-6 p-2">
-          {/* Main Content - Image on Left, Fields on Right */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left Side - Image Upload/Display */}
-            <div className="lg:col-span-4">
-              <div className="flex flex-col items-center">
-                <label
-                  className="block text-sm font-medium mb-3 text-left w-full"
-                  style={{ color: themeUtils.getTextColor(false) }}
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Left Column: Image Upload */}
+              <div className="lg:col-span-1 flex items-center justify-center">
+                <div
+                  className="p-5 rounded-lg border w-full"
+                  style={{
+                    backgroundColor: themeUtils.getBgColor("input"),
+                    borderColor: themeUtils.getBorderColor(),
+                  }}
                 >
-                  Property Image
-                </label>
+                  <h3
+                    className="text-sm font-medium mb-3"
+                    style={{ color: themeUtils.getTextColor(true) }}
+                  >
+                    Property Image
+                  </h3>
 
-                {/* Image Upload Area - Fixed height container */}
-                <div className="relative w-full" style={{ height: '220px' }}>
-                  <input
-                    id="property-image-upload"
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                    onChange={handleImageSelect}
-                    className="hidden"
-                    disabled={saving}
-                  />
-
-                  {!imagePreview ? (
-                    // No image - Blank space with pencil icon
-                    <div
-                      onClick={() => !saving && document.getElementById('property-image-upload').click()}
-                      className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors w-full h-full flex items-center justify-center"
-                      style={{
-                        borderColor: themeUtils.getBorderColor(),
-                        backgroundColor: themeUtils.getBgColor("input"),
-                      }}
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <Pencil
-                          className="w-8 h-8"
-                          style={{ color: themeUtils.getTextColor(false) }}
-                        />
-                        <p
-                          className="text-xs font-medium"
-                          style={{ color: themeUtils.getTextColor(false) }}
-                        >
-                          Click to add image
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    // Image preview - Fixed height with full coverage
-                    <div className="relative rounded-lg overflow-hidden border-2 w-full h-full"
-                      style={{
-                        borderColor: theme.headerBg || "#6366f1",
-                      }}
-                    >
-                      {/* Image preview */}
+                  {/* Image Preview or Upload Area */}
+                  {(previewUrl || existingImage) ? (
+                    <div className="relative">
                       <img
-                        src={imagePreview}
-                        alt="Property preview"
-                        className="w-full h-full object-cover"
+                        src={previewUrl || existingImage}
+                        alt="Property"
+                        className="w-full h-48 object-cover rounded-lg"
                       />
-
+                      <button
+                        onClick={handleRemoveImage}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        type="button"
+                        disabled={saving}
+                      >
+                        <X size={16} />
+                      </button>
+                      
                       {/* Pencil overlay for editing */}
                       <div
-                        onClick={() => !saving && document.getElementById('property-image-upload').click()}
-                        className="absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                        onClick={() => !saving && document.getElementById('property-image')?.click()}
+                        className="absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-lg"
                       >
                         <div className="flex flex-col items-center gap-2">
                           <Pencil className="w-6 h-6 text-white" />
                           <span className="text-white text-xs font-medium">Change Image</span>
                         </div>
                       </div>
-
-                      {/* Remove button (X) */}
-                      <button
-                        onClick={handleImageRemove}
-                        className="absolute top-2 right-2 p-1 rounded-full bg-red-500 hover:bg-red-600 transition-colors z-10 shadow-lg"
-                        disabled={saving}
+                    </div>
+                  ) : (
+                    <div
+                      className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors"
+                      style={{
+                        borderColor: themeUtils.getBorderColor(),
+                        backgroundColor: themeUtils.getBgColor("hover"),
+                      }}
+                      onClick={() => !saving && document.getElementById('property-image')?.click()}
+                    >
+                      <Upload
+                        size={32}
+                        className="mx-auto mb-2"
+                        style={{ color: themeUtils.getTextColor(false, true) }}
+                      />
+                      <p
+                        className="text-sm font-medium mb-1"
+                        style={{ color: themeUtils.getTextColor(true) }}
                       >
-                        <X className="w-3 h-3 text-white" />
-                      </button>
+                        Click to upload
+                      </p>
+                      <p
+                        className="text-xs"
+                        style={{ color: themeUtils.getTextColor(false, true) }}
+                      >
+                        PNG, JPG, WEBP (Max 5MB)
+                      </p>
                     </div>
                   )}
+
+                  <input
+                    id="property-image"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    disabled={saving}
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* Right Side - Form Fields */}
-            <div className="lg:col-span-8 space-y-6">
-              {/* Property Details Section */}
-              <div>
-                <h4
-                  className="text-md font-semibold mb-4"
-                  style={{
-                    color: theme.mood === "Night" ? theme.navbarBg : theme.headerBg,
-                  }}
-                >
-                  Property Details
-                </h4>
+              {/* Right Column: Form Fields */}
+              <div className="lg:col-span-2 space-y-4">
+                {/* Row 1: Community and Property Name */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Community Name - Dropdown */}
+                  {/* Community */}
                   <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: themeUtils.getTextColor(false) }}
-                    >
-                      Community Name *
-                    </label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label
+                        className="block text-sm font-medium"
+                        style={{ color: themeUtils.getTextColor(false) }}
+                      >
+                        Community *
+                      </label>
+                    </div>
                     <select
-                      name="community_id"
                       value={form.community_id}
-                      onChange={(e) => {
-                        const selectedCommunity = communities.find(c => c.community_id === parseInt(e.target.value));
-                        setForm({ 
-                          ...form, 
-                          community_id: e.target.value,
-                          community_name: selectedCommunity?.community_name || ""
-                        });
-                      }}
-                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
+                      onChange={(e) =>
+                        handleInputChange("community_id", e.target.value)
+                      }
+                      className={`w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all appearance-none ${
+                        errors.community_id
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                          : ""
+                      }`}
                       style={{
                         backgroundColor: themeUtils.getBgColor("input"),
-                        borderColor: themeUtils.getBorderColor(),
+                        borderColor: errors.community_id
+                          ? "#ef4444"
+                          : themeUtils.getBorderColor(),
                         color: themeUtils.getTextColor(true),
                       }}
                       disabled={saving || loadingCommunities}
@@ -438,30 +694,162 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
                         Loading communities...
                       </p>
                     )}
+                    {errors.community_id && (
+                      <p className="mt-0.5 text-xs text-red-500 flex items-center gap-1">
+                        <span>⚠</span> {errors.community_id}
+                      </p>
+                    )}
                   </div>
 
                   {/* Property Name */}
                   <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: themeUtils.getTextColor(false) }}
-                    >
-                      Property Name *
-                    </label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label
+                        className="block text-sm font-medium"
+                        style={{ color: themeUtils.getTextColor(false) }}
+                      >
+                        Property Name *
+                      </label>
+                      <span
+                        className="text-xs"
+                        style={{ color: themeUtils.getTextColor(false, true) }}
+                      >
+                        {form.property_name.length}/150
+                      </span>
+                    </div>
                     <input
                       type="text"
-                      name="property_name"
                       value={form.property_name}
                       onChange={(e) =>
-                        setForm({ ...form, property_name: e.target.value })
+                        handleInputChange("property_name", e.target.value)
                       }
-                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
+                      className={`w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                        errors.property_name
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                          : ""
+                      }`}
+                      style={{
+                        backgroundColor: themeUtils.getBgColor("input"),
+                        borderColor: errors.property_name
+                          ? "#ef4444"
+                          : themeUtils.getBorderColor(),
+                        color: themeUtils.getTextColor(true),
+                      }}
+                      placeholder="e.g. Palm Tower"
+                      maxLength={150}
+                      disabled={saving}
+                    />
+                    {errors.property_name && (
+                      <p className="mt-0.5 text-xs text-red-500 flex items-center gap-1">
+                        <span>⚠</span> {errors.property_name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 2: Address 1 and Address 2 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Address 1 */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label
+                        className="block text-sm font-medium"
+                        style={{ color: themeUtils.getTextColor(false) }}
+                      >
+                        Address Line 1
+                      </label>
+                      <span
+                        className="text-xs"
+                        style={{ color: themeUtils.getTextColor(false, true) }}
+                      >
+                        {form.address_line1.length}/200
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={form.address_line1}
+                      onChange={(e) =>
+                        handleInputChange("address_line1", e.target.value)
+                      }
+                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400"
                       style={{
                         backgroundColor: themeUtils.getBgColor("input"),
                         borderColor: themeUtils.getBorderColor(),
                         color: themeUtils.getTextColor(true),
                       }}
-                      placeholder="Enter Property name"
+                      placeholder="Street address, P.O. Box"
+                      maxLength={200}
+                      disabled={saving}
+                    />
+                  </div>
+
+                  {/* Address 2 */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label
+                        className="block text-sm font-medium"
+                        style={{ color: themeUtils.getTextColor(false) }}
+                      >
+                        Address Line 2
+                      </label>
+                      <span
+                        className="text-xs"
+                        style={{ color: themeUtils.getTextColor(false, true) }}
+                      >
+                        {form.address_line2.length}/200
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={form.address_line2}
+                      onChange={(e) =>
+                        handleInputChange("address_line2", e.target.value)
+                      }
+                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400"
+                      style={{
+                        backgroundColor: themeUtils.getBgColor("input"),
+                        borderColor: themeUtils.getBorderColor(),
+                        color: themeUtils.getTextColor(true),
+                      }}
+                      placeholder="Apartment, suite, unit, building, floor, etc."
+                      maxLength={200}
+                      disabled={saving}
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3: City and Total Units */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* City */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label
+                        className="block text-sm font-medium"
+                        style={{ color: themeUtils.getTextColor(false) }}
+                      >
+                        City
+                      </label>
+                      <span
+                        className="text-xs"
+                        style={{ color: themeUtils.getTextColor(false, true) }}
+                      >
+                        {form.city.length}/100
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={form.city}
+                      onChange={(e) =>
+                        handleInputChange("city", e.target.value)
+                      }
+                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400"
+                      style={{
+                        backgroundColor: themeUtils.getBgColor("input"),
+                        borderColor: themeUtils.getBorderColor(),
+                        color: themeUtils.getTextColor(true),
+                      }}
+                      placeholder="e.g. Dubai"
+                      maxLength={100}
                       disabled={saving}
                     />
                   </div>
@@ -476,223 +864,309 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
                     </label>
                     <input
                       type="number"
-                      name="total_units"
                       value={form.total_units}
                       onChange={(e) =>
-                        setForm({ ...form, total_units: e.target.value })
+                        handleInputChange("total_units", e.target.value)
                       }
-                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
-                      style={{
-                        backgroundColor: themeUtils.getBgColor("input"),
-                        borderColor: themeUtils.getBorderColor(),
-                        color: themeUtils.getTextColor(true),
-                      }}
-                      placeholder="Enter total units"
-                      disabled={saving}
                       min="0"
-                      step="1"
-                    />
-                  </div>
-
-                  {/* Location */}
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: themeUtils.getTextColor(false) }}
-                    >
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      name="location"
-                      value={form.location}
-                      onChange={(e) =>
-                        setForm({ ...form, location: e.target.value })
-                      }
-                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
+                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400"
                       style={{
                         backgroundColor: themeUtils.getBgColor("input"),
                         borderColor: themeUtils.getBorderColor(),
                         color: themeUtils.getTextColor(true),
                       }}
-                      placeholder="Enter location"
-                      disabled={saving}
-                    />
-                  </div>
-
-                  {/* Country */}
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: themeUtils.getTextColor(false) }}
-                    >
-                      Country
-                    </label>
-                    <input
-                      type="text"
-                      name="country"
-                      value={form.country}
-                      onChange={(e) =>
-                        setForm({ ...form, country: e.target.value })
-                      }
-                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
-                      style={{
-                        backgroundColor: themeUtils.getBgColor("input"),
-                        borderColor: themeUtils.getBorderColor(),
-                        color: themeUtils.getTextColor(true),
-                      }}
-                      placeholder="Enter country"
-                      disabled={saving}
-                    />
-                  </div>
-
-                  {/* City */}
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: themeUtils.getTextColor(false) }}
-                    >
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={form.city}
-                      onChange={(e) =>
-                        setForm({ ...form, city: e.target.value })
-                      }
-                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
-                      style={{
-                        backgroundColor: themeUtils.getBgColor("input"),
-                        borderColor: themeUtils.getBorderColor(),
-                        color: themeUtils.getTextColor(true),
-                      }}
-                      placeholder="Enter city"
+                      placeholder="0"
                       disabled={saving}
                     />
                   </div>
                 </div>
-              </div>
 
-              <hr
-                className="my-4 border-none h-px opacity-50"
-                style={{ backgroundColor: themeUtils.getTextColor(true) }}
-              />
-
-              {/* Address Details Section */}
-              <div>
-                <h4
-                  className="text-md font-semibold mb-4"
-                  style={{
-                    color: theme.mood === "Night" ? theme.navbarBg : theme.headerBg,
-                  }}
-                >
-                  Address Details
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Address Line 1 */}
-                  <div>
+                {/* Description */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
                     <label
-                      className="block text-sm font-medium mb-1"
+                      className="block text-sm font-medium"
                       style={{ color: themeUtils.getTextColor(false) }}
                     >
-                      Address Line 1
+                      Property Description
                     </label>
-                    <input
-                      type="text"
-                      name="address_line1"
-                      value={form.address_line1}
-                      onChange={(e) =>
-                        setForm({ ...form, address_line1: e.target.value })
-                      }
-                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
-                      style={{
-                        backgroundColor: themeUtils.getBgColor("input"),
-                        borderColor: themeUtils.getBorderColor(),
-                        color: themeUtils.getTextColor(true),
-                      }}
-                      placeholder="Enter address line 1"
-                      disabled={saving}
-                    />
+                    <span
+                      className="text-xs"
+                      style={{ color: themeUtils.getTextColor(false, true) }}
+                    >
+                      {form.property_description.length}/500
+                    </span>
                   </div>
+                  <textarea
+                    rows={3}
+                    value={form.property_description}
+                    onChange={(e) =>
+                      handleInputChange("property_description", e.target.value)
+                    }
+                    className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all resize-none placeholder:text-gray-400"
+                    style={{
+                      backgroundColor: themeUtils.getBgColor("input"),
+                      borderColor: themeUtils.getBorderColor(),
+                      color: themeUtils.getTextColor(true),
+                    }}
+                    placeholder="Brief description of the property..."
+                    maxLength={500}
+                    disabled={saving}
+                  />
+                </div>
 
-                  {/* Address Line 2 */}
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: themeUtils.getTextColor(false) }}
-                    >
-                      Address Line 2
-                    </label>
-                    <input
-                      type="text"
-                      name="address_line2"
-                      value={form.address_line2}
-                      onChange={(e) =>
-                        setForm({ ...form, address_line2: e.target.value })
-                      }
-                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
-                      style={{
-                        backgroundColor: themeUtils.getBgColor("input"),
-                        borderColor: themeUtils.getBorderColor(),
-                        color: themeUtils.getTextColor(true),
-                      }}
-                      placeholder="Enter address line 2"
-                      disabled={saving}
-                    />
-                  </div>
+                {/* Manager Details */}
+                <div className="pt-2">
+                  <h3
+                    className="text-sm font-semibold mb-3 opacity-70 uppercase tracking-wider"
+                    style={{ color: themeUtils.getTextColor(true) }}
+                  >
+                    Manager Details (Optional)
+                  </h3>
 
-                  {/* Zip Code */}
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: themeUtils.getTextColor(false) }}
-                    >
-                      Zip Code
-                    </label>
-                    <input
-                      type="text"
-                      name="zip_code"
-                      value={form.zip_code}
-                      onChange={(e) =>
-                        setForm({ ...form, zip_code: e.target.value })
-                      }
-                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
-                      style={{
-                        backgroundColor: themeUtils.getBgColor("input"),
-                        borderColor: themeUtils.getBorderColor(),
-                        color: themeUtils.getTextColor(true),
-                      }}
-                      placeholder="Enter zip code"
-                      disabled={saving}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label
+                        className="block text-sm font-medium mb-1"
+                        style={{ color: themeUtils.getTextColor(false) }}
+                      >
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        value={form.manager_name}
+                        onChange={(e) =>
+                          handleInputChange("manager_name", e.target.value)
+                        }
+                        className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400"
+                        style={{
+                          backgroundColor: themeUtils.getBgColor("input"),
+                          borderColor: themeUtils.getBorderColor(),
+                          color: themeUtils.getTextColor(true),
+                        }}
+                        placeholder="Manager Name"
+                        maxLength={100}
+                        disabled={saving}
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        className="block text-sm font-medium mb-1"
+                        style={{ color: themeUtils.getTextColor(false) }}
+                      >
+                        Contact Number
+                      </label>
+                      <div className="relative">
+                        <div className="flex gap-1">
+                          {/* Custom Country Code Dropdown */}
+                          <div className="relative w-20">
+                            <button
+                              type="button"
+                              onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                              className={`w-full px-2 py-2 text-sm rounded-lg border flex items-center justify-between ${
+                                errors.country_code
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                              style={{
+                                backgroundColor: themeUtils.getBgColor("input"),
+                                borderColor: errors.country_code
+                                  ? "#ef4444"
+                                  : themeUtils.getBorderColor(),
+                                color: themeUtils.getTextColor(true),
+                              }}
+                              disabled={saving}
+                            >
+                              <span className="truncate">
+                                {selectedCountry ? selectedCountry.code : "+971"}
+                              </span>
+                              <ChevronDown size={14} className={`transition-transform ${countryDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {countryDropdownOpen && (
+                              <div
+                                className="absolute z-50 mt-1 w-72 rounded-lg border shadow-lg"
+                                style={{
+                                  backgroundColor: themeUtils.getBgColor("default"),
+                                  borderColor: themeUtils.getBorderColor(),
+                                }}
+                              >
+                                {/* Search Input */}
+                                <div className="p-2 border-b" style={{ borderColor: themeUtils.getBorderColor() }}>
+                                  <div className="relative">
+                                    <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2" style={{ color: themeUtils.getTextColor(false, true) }} />
+                                    <input
+                                      type="text"
+                                      value={countrySearch}
+                                      onChange={(e) => setCountrySearch(e.target.value)}
+                                      placeholder="Search country..."
+                                      className="w-full pl-7 pr-3 py-1.5 text-xs rounded-lg border"
+                                      style={{
+                                        backgroundColor: themeUtils.getBgColor("input"),
+                                        borderColor: themeUtils.getBorderColor(),
+                                        color: themeUtils.getTextColor(true),
+                                      }}
+                                      autoFocus
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Country List */}
+                                <div className="max-h-60 overflow-y-auto">
+                                  {filteredCountries.length > 0 ? (
+                                    filteredCountries.map((country) => (
+                                      <button
+                                        key={country.code}
+                                        type="button"
+                                        className="w-full px-3 py-2 text-left hover:bg-opacity-10 hover:bg-gray-500 transition-colors flex items-center justify-between"
+                                        style={{
+                                          backgroundColor: form.country_code === country.code ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                                          color: themeUtils.getTextColor(true),
+                                        }}
+                                        onClick={() => handleCountryChange(country.code)}
+                                      >
+                                        <span>
+                                          <span className="font-medium mr-2">{country.code}</span>
+                                          <span className="text-xs opacity-70">{country.country}</span>
+                                          <span className="text-xs ml-2 opacity-50">({country.digits} digits)</span>
+                                        </span>
+                                        {form.country_code === country.code && (
+                                          <span className="text-blue-500">✓</span>
+                                        )}
+                                      </button>
+                                    ))
+                                  ) : (
+                                    <div className="px-3 py-4 text-center text-xs" style={{ color: themeUtils.getTextColor(false, true) }}>
+                                      No countries found
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Phone Number Input */}
+                          <input
+                            type="tel"
+                            value={form.manager_contact}
+                            onChange={(e) => handlePhoneChange(e.target.value)}
+                            className={`flex-1 px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                              errors.manager_contact
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                                : ""
+                            }`}
+                            style={{
+                              backgroundColor: themeUtils.getBgColor("input"),
+                              borderColor: errors.manager_contact
+                                ? "#ef4444"
+                                : themeUtils.getBorderColor(),
+                              color: themeUtils.getTextColor(true),
+                            }}
+                            placeholder={`${requiredDigits} digits`}
+                            maxLength={requiredDigits}
+                            disabled={saving}
+                          />
+                        </div>
+                      </div>
+                      {errors.manager_contact && (
+                        <p className="mt-0.5 text-xs text-red-500 flex items-center gap-1">
+                          <span>⚠</span> {errors.manager_contact}
+                        </p>
+                      )}
+                      {errors.country_code && (
+                        <p className="mt-0.5 text-xs text-red-500 flex items-center gap-1">
+                          <span>⚠</span> {errors.country_code}
+                        </p>
+                      )}
+                      <p
+                        className="mt-0.5 text-xs"
+                        style={{ color: themeUtils.getTextColor(false, true) }}
+                      >
+                        Enter {requiredDigits} digits for {selectedCountry?.country || 'UAE'}
+                      </p>
+                    </div>
                   </div>
                 </div>
+
+                {/* Selected Community Info */}
+                {selectedCommunity && (
+                  <div
+                    className="mt-2 p-3 rounded-lg border text-sm"
+                    style={{
+                      borderColor: themeUtils.getBorderColor(),
+                      backgroundColor: themeUtils.getBgColor("input"),
+                    }}
+                  >
+                    <h5 className="font-semibold mb-2" style={{ color: themeUtils.getTextColor(true) }}>
+                      Community Information
+                    </h5>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="opacity-70">Location:</span>
+                        <p style={{ color: themeUtils.getTextColor(true) }}>
+                          {selectedCommunity.location || selectedCommunity.address_line1 || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="opacity-70">City:</span>
+                        <p style={{ color: themeUtils.getTextColor(true) }}>
+                          {selectedCommunity.city || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="opacity-70">Country:</span>
+                        <p style={{ color: themeUtils.getTextColor(true) }}>
+                          {selectedCommunity.country || '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Form Actions */}
+          {/* Footer with Actions */}
           <div
-            className="flex justify-end gap-4 pt-6 border-t mt-6"
+            className="flex items-center justify-between gap-3 p-3 border-t mt-6"
             style={{ borderColor: themeUtils.getBorderColor() }}
           >
-            <Button
-              variant="danger"
-              onClick={handleCancel}
-              themeUtils={themeUtils}
-              disabled={saving}
+            <div
+              className="text-xs"
+              style={{ color: themeUtils.getTextColor(false, true) }}
             >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleSubmit}
-              loading={saving}
-              disabled={saving || !form.property_name.trim()}
-            >
-              {saving ? "Updating..." : "Update"}
-            </Button>
+              * Required fields
+              {hasErrors() && (
+                <span className="ml-2 text-red-500">
+                  {Object.values(errors).filter((e) => e).length} error(s)
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={handleCancel}
+                disabled={saving}
+                themeUtils={themeUtils}
+                size="sm"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSubmit}
+                loading={saving}
+                disabled={saving || !isFormValid()}
+                themeUtils={themeUtils}
+                size="sm"
+                className={!isFormValid() ? "opacity-50 cursor-not-allowed" : ""}
+              >
+                {saving ? "Updating..." : "Update Property"}
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>

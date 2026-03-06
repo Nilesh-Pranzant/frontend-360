@@ -43,7 +43,6 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
     floor_number: "", // Changed from 'floor' to 'floor_number' to match API
     unit_type: "",
     status: "unsold",
-    meter_number: "",
     description: ""
   });
 
@@ -151,7 +150,6 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
         floor_number: form.floor_number ? parseInt(form.floor_number) : null, // Changed to floor_number and parse as integer
         unit_type: form.unit_type || null,
         status: form.status || "unsold",
-        meter_number: form.meter_number || null,
         description: form.description || null
       };
 
@@ -307,24 +305,27 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
               </div>
 
               {/* Customer Name */}
-              <div>
+               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Customer Name
+                  Status
                 </label>
-                <input
-                  type="text"
-                  value={form.customer_name}
-                  onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     color: themeUtils.getTextColor(true),
                     borderColor: themeUtils.getBorderColor(),
                   }}
-                  placeholder="Enter customer name (optional)"
                   disabled={loading}
-                />
+                >
+                  <option value="unsold">Unsold</option>
+                  <option value="sold">Sold</option>
+                  <option value="reserved">Reserved</option>
+                </select>
               </div>
+              
 
               {/* Floor Number - Updated to match API field name */}
               <div>
@@ -395,46 +396,26 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
               </div>
 
               {/* Status */}
-              <div>
+             <div>
                 <label className="block text-sm font-medium mb-1">
-                  Status
-                </label>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{
-                    backgroundColor: themeUtils.getBgColor("input"),
-                    color: themeUtils.getTextColor(true),
-                    borderColor: themeUtils.getBorderColor(),
-                  }}
-                  disabled={loading}
-                >
-                  <option value="unsold">Unsold</option>
-                  <option value="sold">Sold</option>
-                  <option value="reserved">Reserved</option>
-                </select>
-              </div>
-
-              {/* Meter Number */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Meter Number
+                  Customer Name
                 </label>
                 <input
                   type="text"
-                  value={form.meter_number}
-                  onChange={(e) => setForm({ ...form, meter_number: e.target.value })}
+                  value={form.customer_name}
+                  onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
                     color: themeUtils.getTextColor(true),
                     borderColor: themeUtils.getBorderColor(),
                   }}
-                  placeholder="Enter meter number (optional)"
+                  placeholder="Enter customer name (optional)"
                   disabled={loading}
                 />
               </div>
+
+             
 
               {/* Description */}
               <div className="md:col-span-2">

@@ -16,7 +16,6 @@ import { API_URL_COMMUNITY } from "../../../../../config";
 const ViewCommunity = ({ community: propCommunity, onClose }) => {
   const { theme, themeUtils } = useTheme();
   const navigate = useNavigate();
-  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [communityData, setCommunityData] = useState(null);
   const [properties, setProperties] = useState([]);
@@ -271,15 +270,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
-                    <div>
-                      <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Location</p>
-                      <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                        {communityData.location || "-"}
-                      </p>
-                    </div>
-                  </div>
+                  
 
                   <div className="flex items-start gap-3">
                     <Globe className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />

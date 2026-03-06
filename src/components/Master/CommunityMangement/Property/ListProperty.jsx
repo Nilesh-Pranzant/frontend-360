@@ -66,8 +66,7 @@ const ListProperty = () => {
           total_units: p.total_units || 0,
           subscription: p.subscription || "-",
           city: p.city || "-",
-          country: p.country || "-",
-          location: p.location || "-",
+          // country: p.country || "-",
           totalFloors: p.total_floors || 0,
           total_floors: p.total_floors || 0,
           addressLine1: p.address_line1 || "",
@@ -205,9 +204,8 @@ const ListProperty = () => {
       "Sr. No",
       "Community Name",
       "Property Name",
-      "Location",
       "City",
-      "Country",
+      // "Country",
       "Total Units",
     ];
 
@@ -218,9 +216,8 @@ const ListProperty = () => {
           i + 1,
           `"${p.communityName?.replace(/"/g, '""') || ""}"`,
           `"${p.PropertyName?.replace(/"/g, '""') || ""}"`,
-          `"${p.location?.replace(/"/g, '""') || ""}"`,
           `"${p.city?.replace(/"/g, '""') || ""}"`,
-          `"${p.country?.replace(/"/g, '""') || ""}"`,
+          // `"${p.country?.replace(/"/g, '""') || ""}"`,
           p.totalUnits || 0,
         ].join(",")
       ),
@@ -246,9 +243,8 @@ const ListProperty = () => {
     "Sr No",
     "Community Name",
     "Property Name",
-    "Location",
     "City",
-    "Country",
+    // "Country",
     "Total Units",
     "Actions",
   ];
@@ -280,13 +276,7 @@ const ListProperty = () => {
         {truncateText(property.PropertyName)}
       </td>
 
-      <td
-        className="px-4 py-2 text-sm text-left truncate max-w-[180px]"
-        style={{ color: themeUtils.getTextColor(true) }}
-        title={property.location || "-"}
-      >
-        {truncateText(property.location)}
-      </td>
+    
 
       <td
         className="px-4 py-2 text-sm text-left truncate max-w-[120px]"
@@ -296,13 +286,13 @@ const ListProperty = () => {
         {truncateText(property.city)}
       </td>
 
-      <td
+      {/* <td
         className="px-4 py-2 text-sm text-left truncate max-w-[120px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={property.country || "-"}
       >
         {truncateText(property.country)}
-      </td>
+      </td> */}
 
       <td
         className="px-4 py-2 text-center text-sm"
@@ -416,7 +406,8 @@ const ListProperty = () => {
         width="75vw"
       >
         <ViewProperty
-          property={selectedProperty}
+          // property={selectedProperty}
+          propertyId={selectedProperty?.id}
           onClose={() => setIsViewDrawerOpen(false)}
           baseURL={baseURL}
         />

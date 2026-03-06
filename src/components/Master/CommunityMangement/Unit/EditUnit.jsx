@@ -376,13 +376,12 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
                 className="block text-sm font-medium mb-1"
                 style={{ color: themeUtils.getTextColor(false) }}
               >
-                Customer Name
+                Status
               </label>
-              <input
-                type="text"
-                value={form.customer_name}
+              <select
+                value={form.status}
                 onChange={(e) =>
-                  setForm({ ...form, customer_name: e.target.value })
+                  setForm({ ...form, status: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                 style={{
@@ -390,10 +389,14 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
                   borderColor: themeUtils.getBorderColor(),
                   color: themeUtils.getTextColor(true),
                 }}
-                placeholder="Enter customer name"
                 disabled={saving}
-              />
+              >
+                <option value="unsold">Unsold</option>
+                <option value="sold">Sold</option>
+                <option value="reserved">Reserved</option>
+              </select>
             </div>
+            
 
             {/* Floor */}
             <div>
@@ -475,12 +478,13 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
                 className="block text-sm font-medium mb-1"
                 style={{ color: themeUtils.getTextColor(false) }}
               >
-                Status
+                Customer Name
               </label>
-              <select
-                value={form.status}
+              <input
+                type="text"
+                value={form.customer_name}
                 onChange={(e) =>
-                  setForm({ ...form, status: e.target.value })
+                  setForm({ ...form, customer_name: e.target.value })
                 }
                 className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:outline-none transition-all"
                 style={{
@@ -488,16 +492,13 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
                   borderColor: themeUtils.getBorderColor(),
                   color: themeUtils.getTextColor(true),
                 }}
+                placeholder="Enter customer name"
                 disabled={saving}
-              >
-                <option value="unsold">Unsold</option>
-                <option value="sold">Sold</option>
-                <option value="reserved">Reserved</option>
-              </select>
+              />
             </div>
 
             {/* Meter Number */}
-            <div>
+            {/* <div>
               <label
                 className="block text-sm font-medium mb-1"
                 style={{ color: themeUtils.getTextColor(false) }}
@@ -519,7 +520,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
                 placeholder="Enter meter number"
                 disabled={saving}
               />
-            </div>
+            </div> */}
 
             {/* Description */}
             <div className="md:col-span-2">
