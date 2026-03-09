@@ -217,7 +217,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
       return;
     }
     if (!form.property_id) {
-      toast.error("Validation Error", "Please select a property.");
+      toast.error("Validation Error", "Please select a building.");
       return;
     }
     if (!form.unit_number) {
@@ -253,7 +253,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Success", "Unit updated successfully!");
+        // toast.success("Success", "Unit updated successfully!");
         setTimeout(() => {
           if (onSuccess) onSuccess(data);
           if (isModal && onClose) onClose();
@@ -341,7 +341,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
               {/* Property Name */}
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                  Property Name *
+                  Building Name *
                 </label>
                 <select
                   value={form.property_id}
@@ -349,7 +349,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
                   className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   disabled={!form.community_id || saving || loadingProperties}
                 >
-                  <option value="">Select Property</option>
+                  <option value="">Select Building</option>
                   {properties.map((p) => (
                     <option key={p.property_id} value={p.property_id}>
                       {p.property_name}

@@ -126,8 +126,8 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
   useEffect(() => {
     if (form.property_id) {
       const selectedProperty = properties.find(p => p.property_id === parseInt(form.property_id));
-      console.log("Selected property ID:", form.property_id); // Debug log
-      console.log("Selected property for name update:", selectedProperty); // Debug log
+      console.log("Selected building ID:", form.property_id); // Debug log
+      console.log("Selected building for name update:", selectedProperty); // Debug log
       if (selectedProperty) {
         setForm(prev => ({ ...prev, property_name: selectedProperty.property_name }));
       }
@@ -151,7 +151,7 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
     }
 
     if (!form.property_id) {
-      toast.error("Validation Error", "Please select a property.");
+      toast.error("Validation Error", "Please select a building.");
       return;
     }
 
@@ -279,7 +279,7 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
               {/* Property */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Property Name *
+                  Building Name *
                 </label>
                 <select
                   value={form.property_id}
@@ -292,7 +292,7 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                   }}
                   disabled={!form.community_id || loading || loadingProperties}
                 >
-                  <option value="">Select Property</option>
+                  <option value="">Select Building</option>
                   {properties.map((p) => (
                     <option key={p.property_id} value={p.property_id}>
                       {p.property_name}
@@ -301,7 +301,7 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                 </select>
                 {loadingProperties && (
                   <p className="text-xs mt-1" style={{ color: themeUtils.getTextColor(false) }}>
-                    Loading properties...
+                    Loading buildings...
                   </p>
                 )}
               </div>

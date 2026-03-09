@@ -141,7 +141,7 @@ const ListProperty = () => {
     deleteInProgress.current = true;
 
     confirmDialog({
-      message: "Do you want to delete this Property? This action cannot be undone.",
+      message: "Do you want to delete this Building? This action cannot be undone.",
       header: "Delete Confirmation",
       icon: "pi pi-exclamation-triangle",
       acceptClassName: "p-button-danger",
@@ -160,13 +160,13 @@ const ListProperty = () => {
           
           if (response.ok) {
             setProperties((prev) => prev.filter((p) => p.id !== id));
-            toast.error("Deleted!", "Property deleted successfully.");
+            toast.error("Deleted!", "Building deleted successfully.");
           } else {
             throw new Error(result.message || "Failed to delete");
           }
         } catch (err) {
-          console.error("Delete Property Error:", err);
-          toast.error("Error", err.message || "Failed to delete property. Please try again.");
+          console.error("Delete Building Error:", err);
+          toast.error("Error", err.message || "Failed to delete building. Please try again.");
         } finally {
           setTimeout(() => {
             deleteInProgress.current = false;
@@ -184,26 +184,26 @@ const ListProperty = () => {
 
   const handleRefresh = async () => {
     await fetchProperties();
-    toast.success("Refreshed", "Property list updated successfully!");
+    toast.success("Refreshed", "Building list updated successfully!");
   };
 
   const handleAddSuccess = () => {
     fetchProperties();
     setIsAddDrawerOpen(false);
-    toast.success("Success", "Property added successfully!");
+    toast.success("Success", "Building added successfully!");
   };
 
   const handleEditSuccess = () => {
     fetchProperties();
     setIsEditDrawerOpen(false);
-    toast.success("Success", "Property updated successfully!");
+    toast.success("Success", "Building updated successfully!");
   };
 
   const exportCSV = () => {
     const headers = [
       "Sr. No",
       "Community Name",
-      "Property Name",
+      "Building Name",
       "City",
       // "Country",
       "Total Floors",
@@ -244,7 +244,7 @@ const ListProperty = () => {
   const tableHeaders = [
     "Sr No",
     "Community Name",
-    "Property Name",
+    "Building Name",
     "City",
     // "Country",
     "Total Floors",
@@ -316,9 +316,9 @@ const ListProperty = () => {
           onView={() => handleView(property)}
           onEdit={() => handleEdit(property)}
           onDelete={() => handleDelete(property.id)}
-          viewTitle="View Property"
-          editTitle="Edit Property"
-          deleteTitle="Delete Property"
+          viewTitle="View Building"
+          editTitle="Edit Building"
+          deleteTitle="Delete Building"
           menuAlignment="right"
         />
       </td>
@@ -331,7 +331,7 @@ const ListProperty = () => {
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 py-2">
         <div className="space-y-1">
-          <CardTitle themeUtils={themeUtils}>Property Management</CardTitle>
+          <CardTitle themeUtils={themeUtils}>Building Management</CardTitle>
         </div>
 
         <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-auto">
@@ -342,7 +342,7 @@ const ListProperty = () => {
               className="shrink-0"
             />
             <SearchBar
-              placeholder="Search Property"
+              placeholder="Search Buildeings..."
               value={search}
               onChange={setSearch}
               size="medium"
@@ -390,7 +390,7 @@ const ListProperty = () => {
               data={paginatedProperty}
               renderRow={renderRow}
               loading={loading}
-              emptyMessage="No properties found. Click 'Add' to create your first property."
+              emptyMessage="No buildings found. Click 'Add' to create your first building."
             />
           </div>
         </div>
@@ -408,7 +408,7 @@ const ListProperty = () => {
 
       {/* Drawers / Dialogs */}
       <CommonDialog
-        header="Property Details"
+        header="Building Details"
         visible={isViewDrawerOpen}
         onHide={() => setIsViewDrawerOpen(false)}
         position="right"
@@ -424,7 +424,7 @@ const ListProperty = () => {
       </CommonDialog>
 
       <CommonDialog
-        header="Add New Property"
+        header="Add New Building"
         visible={isAddDrawerOpen}
         onHide={() => setIsAddDrawerOpen(false)}
         position="right"
@@ -439,7 +439,7 @@ const ListProperty = () => {
       </CommonDialog>
 
       <CommonDialog
-        header="Edit Property"
+        header="Edit Building"
         visible={isEditDrawerOpen}
         onHide={() => setIsEditDrawerOpen(false)}
         position="right"

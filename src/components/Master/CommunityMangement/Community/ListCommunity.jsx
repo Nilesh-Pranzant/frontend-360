@@ -264,7 +264,7 @@ const ListCommunity = () => {
         {truncateText(community.city)}
       </td>
       <td
-        className="px-4 py-1.5 text-sm text-left truncate max-w-[200px]"
+        className="px-4 py-1.5 text-sm text-center truncate max-w-[200px]"
         style={{ color: themeUtils.getTextColor(true) }}
         title={community.manager_name || "-"}
       >

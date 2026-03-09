@@ -252,7 +252,7 @@ const getStatusColor = (status) => {
     const headers = [
       "Sr. No",
       "Community Name",
-      "Property Name",
+      "Building Name",
       "Unit No",
       "Customer Name",
       "Floor",
@@ -290,7 +290,7 @@ const getStatusColor = (status) => {
   const tableHeaders = [
     "Sr. No",
     "Community Name",
-    "Property Name",
+    "Building Name",
     "Unit No",
     "Customer Name",
     "Floor",

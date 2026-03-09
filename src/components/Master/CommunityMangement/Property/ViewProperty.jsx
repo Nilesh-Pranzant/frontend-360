@@ -1,430 +1,3 @@
-// // pages/Property/ViewProperty.js
-// import React, { useEffect, useState } from "react";
-// import { useNavigate, useParams } from "react-router-dom";
-// import { Building } from "lucide-react";
-// import { useTheme } from "../../../../ui/Settings/themeUtils";
-// import Button from "../../../../ui/Common/Button";
-// import Card, {
-//   CardHeader,
-//   CardTitle,
-// } from "../../../../ui/Common/Card";
-// import { RiArrowGoBackFill } from "react-icons/ri";
-// import { API_URL_PROPERTY } from "../../../../../config";
-
-// const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
-//   const { theme, themeUtils } = useTheme();
-//   const navigate = useNavigate();
-//   const { id } = useParams();
-
-//   const [loading, setLoading] = useState(true);
-//   const [property, setProperty] = useState(null);
-//   const [communityName, setCommunityName] = useState(null);
-//   const [error, setError] = useState(null);
-
-//   // Base URL for API
-//   const baseURL = propBaseURL || API_URL_PROPERTY || "http://localhost:5000";
-
-//   // Check if modal/drawer mode
-//   const isModal = !!onClose;
-
-//   // Fetch community name by ID
-//   const fetchCommunityName = async (communityId) => {
-//     if (!communityId) return null;
-    
-//     try {
-//       const response = await fetch(`${baseURL}/api/communities/${communityId}`);
-//       const data = await response.json();
-      
-//       if (response.ok) {
-//         const community = data.data || data;
-//         return community.community_name || community.communityName || "N/A";
-//       }
-//     } catch (err) {
-//       console.error("Error fetching community:", err);
-//     }
-//     return null;
-//   };
-
-//   // Fetch property from API
-//   useEffect(() => {
-//     console.log("ViewProperty mounted");
-    
-//     const fetchProperty = async () => {
-//       // Get property ID from props or URL params
-//       const propertyIdToUse = propertyId || id;
-      
-//       if (!propertyIdToUse) {
-//         setError("Property ID not found");
-//         setLoading(false);
-//         return;
-//       }
-
-//       try {
-//         setLoading(true);
-//         console.log("Fetching property from:", `${baseURL}/api/properties/${propertyIdToUse}`);
-        
-//         const response = await fetch(`${baseURL}/api/properties/${propertyIdToUse}`);
-//         const data = await response.json();
-        
-//         console.log("API Response:", data);
-
-//         if (response.ok) {
-//           const propertyData = data.data || data;
-//           setProperty(propertyData);
-//           setError(null);
-          
-//           // Fetch community name if community_id exists
-//           if (propertyData.community_id) {
-//             const name = await fetchCommunityName(propertyData.community_id);
-//             setCommunityName(name);
-//           }
-//         } else {
-//           throw new Error(data.message || "Failed to load property details");
-//         }
-//       } catch (err) {
-//         console.error("Fetch error:", err);
-//         setError(err.message || "Failed to load property details");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchProperty();
-//   }, [propertyId, id, baseURL]);
-
-//   if (loading) {
-//     return (
-//       <div className="p-6 text-center">
-//         <div
-//           className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
-//           style={{ borderColor: theme.headerBg || "#6366f1" }}
-//         />
-//         <p style={{ color: themeUtils.getTextColor(true) }}>
-//           Loading property details...
-//         </p>
-//       </div>
-//     );
-//   }
-
-//   if (error || !property) {
-//     return (
-//       <div className="p-6 text-center space-y-4">
-//         <p style={{ color: themeUtils.getTextColor(true) }}>
-//           {error || "Property not found"}
-//         </p>
-//         {!isModal && (
-//           <Button
-//             variant="primary"
-//             onClick={() => navigate("/community-management/Property")}
-//             themeUtils={themeUtils}
-//           >
-//             Back to Properties
-//           </Button>
-//         )}
-//         {isModal && (
-//           <Button variant="outline" onClick={onClose} themeUtils={themeUtils}>
-//             Close
-//           </Button>
-//         )}
-//       </div>
-//     );
-//   }
-
-//   console.log("Property data:", property);
-
-//   return (
-//     <div className={isModal ? "space-y-6" : "py-4 px-6 space-y-6"}>
-//       {/* Header - Hide in modal mode */}
-//       {!isModal && (
-//         <CardHeader>
-//           <div className="flex justify-between items-center mb-6">
-//             <CardTitle themeUtils={themeUtils}>Property Information</CardTitle>
-//             <Button
-//               variant="ghost"
-//               onClick={() => navigate("/community-management/Property")}
-//               themeUtils={themeUtils}
-//             >
-//               <RiArrowGoBackFill />
-//             </Button>
-//           </div>
-//         </CardHeader>
-//       )}
-
-//       {/* Main Content with Image */}
-//       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-//         {/* Left Side: Building Icon or Property Image */}
-//         <div className="col-span-3 flex flex-col items-center">
-//           <div className="flex justify-center items-center mb-6 bg-[#d4e6ef] w-50 h-50 rounded-lg">
-//             {property.property_image ? (
-//               <img
-//                 src={`${baseURL}${property.property_image}`}
-//                 alt={property.property_name}
-//                 className="w-full h-full object-cover rounded-lg"
-//                 onError={(e) => {
-//                   e.target.onerror = null;
-//                   e.target.style.display = 'none';
-//                   e.target.parentNode.innerHTML = `
-//                     <div class="p-8 rounded-lg" style="background-color: ${theme.headerBg || '#6366f1'}20">
-//                       <svg class="w-32 h-32" style="color: ${theme.headerBg || '#6366f1'}" ...></svg>
-//                     </div>
-//                   `;
-//                 }}
-//               />
-//             ) : (
-//               <div
-//                 className="p-8 rounded-lg"
-//                 style={{
-//                   backgroundColor: `${theme.headerBg || "#6366f1"}20`,
-//                 }}
-//               >
-//                 <Building
-//                   className="w-32 h-32"
-//                   style={{ color: theme.headerBg || "#6366f1" }}
-//                 />
-//               </div>
-//             )}
-//           </div>
-          
-//           {/* Property Code Badge */}
-//           {property.property_code && (
-//             <div className="mt-2 text-center">
-//               <span 
-//                 className="px-3 py-1 rounded-full text-sm"
-//                 style={{ 
-//                   backgroundColor: `${theme.headerBg || "#6366f1"}20`,
-//                   color: theme.headerBg || "#6366f1"
-//                 }}
-//               >
-//                 Code: {property.property_code}
-//               </span>
-//             </div>
-//           )}
-//         </div>
-
-//         {/* Right Side: All Details */}
-//         <div className="col-span-9 space-y-6">
-//           {/* Property Information */}
-//           <div>
-//             <h4
-//               className="text-md font-semibold mb-4"
-//               style={{
-//                 color: theme.mood === "Night" ? theme.navbarBg : theme.headerBg,
-//               }}
-//             >
-//               Property Details
-//             </h4>
-//             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//               <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   Community:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {communityName || `Community ID: ${property.community_id || "N/A"}`}
-//                 </p>
-//               </div>
-//               <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   Property Name:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {property.property_name || "N/A"}
-//                 </p>
-//               </div>
-//               <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   Property Code:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {property.property_code || "N/A"}
-//                 </p>
-//               </div>
-//               <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   Total Units:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {property.total_units || 0}
-//                 </p>
-//               </div>
-//               <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   Total Floors:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {property.total_floors || 0}
-//                 </p>
-//               </div>
-//               <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   Location:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {property?.location || property?.address_line1 || "N/A"}
-//                 </p>
-//               </div>
-//               <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   City:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {property?.city || "N/A"}
-//                 </p>
-//               </div>
-//               <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   Country:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {property?.country || "UAE"}
-//                 </p>
-//               </div>
-//             </div>
-//           </div>
-
-//           <hr
-//             className="my-4 border-none h-px opacity-50"
-//             style={{ backgroundColor: themeUtils.getTextColor(true) }}
-//           />
-
-//           {/* Address Details */}
-//           <div>
-//             <h4
-//               className="text-md font-semibold mb-4"
-//               style={{
-//                 color: theme.mood === "Night" ? theme.navbarBg : theme.headerBg,
-//               }}
-//             >
-//               Address Details
-//             </h4>
-//             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//               <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   Address Line 1:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {property?.address_line1 || "N/A"}
-//                 </p>
-//               </div>
-//               <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   Address Line 2:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {property?.address_line2 || "N/A"}
-//                 </p>
-//               </div>
-//               {/* <div className="flex items-center space-x-2">
-//                 <p
-//                   className="text-sm font-semibold"
-//                   style={{ color: themeUtils.getTextColor(false, true) }}
-//                 >
-//                   Zip Code:
-//                 </p>
-//                 <p style={{ color: themeUtils.getTextColor(true) }}>
-//                   {property?.zip_code || "N/A"}
-//                 </p>
-//               </div> */}
-//             </div>
-//           </div>
-
-//           {/* Manager Details (if available) */}
-//           {(property.manager_name || property.manager_contact) && (
-//             <>
-//               <hr
-//                 className="my-4 border-none h-px opacity-50"
-//                 style={{ backgroundColor: themeUtils.getTextColor(true) }}
-//               />
-              
-//               <div>
-//                 <h4
-//                   className="text-md font-semibold mb-4"
-//                   style={{
-//                     color: theme.mood === "Night" ? theme.navbarBg : theme.headerBg,
-//                   }}
-//                 >
-//                   Manager Details
-//                 </h4>
-//                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//                   {property.manager_name && (
-//                     <div className="flex items-center space-x-2">
-//                       <p
-//                         className="text-sm font-semibold"
-//                         style={{ color: themeUtils.getTextColor(false, true) }}
-//                       >
-//                         Manager Name:
-//                       </p>
-//                       <p style={{ color: themeUtils.getTextColor(true) }}>
-//                         {property.manager_name}
-//                       </p>
-//                     </div>
-//                   )}
-//                   {property.manager_contact && (
-//                     <div className="flex items-center space-x-2">
-//                       <p
-//                         className="text-sm font-semibold"
-//                         style={{ color: themeUtils.getTextColor(false, true) }}
-//                       >
-//                         Manager Contact:
-//                       </p>
-//                       <p style={{ color: themeUtils.getTextColor(true) }}>
-//                         {property.manager_contact}
-//                       </p>
-//                     </div>
-//                   )}
-//                 </div>
-//               </div>
-//             </>
-//           )}
-//         </div>
-//       </div>
-
-//       {/* Footer buttons in modal mode */}
-//       {isModal && (
-//         <div
-//           className="flex justify-end gap-3 pt-4 border-t mt-4"
-//           style={{ borderColor: themeUtils.getBorderColor() }}
-//         >
-//           <Button variant="outline" onClick={onClose} themeUtils={themeUtils}>
-//             Close
-//           </Button>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default ViewProperty;
-
 
 // pages/Property/ViewProperty.js
 import React, { useEffect, useState } from "react";
@@ -480,21 +53,21 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
 
   // Fetch property from API
   useEffect(() => {
-    console.log("ViewProperty mounted");
+    console.log("ViewBuilding mounted");
     
     const fetchProperty = async () => {
       // Get property ID from props or URL params
       const propertyIdToUse = propertyId || id;
       
       if (!propertyIdToUse) {
-        setError("Property ID not found");
+        setError("Building ID not found");
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        console.log("Fetching property from:", `${baseURL}/api/properties/${propertyIdToUse}`);
+        console.log("Fetching building from:", `${baseURL}/api/properties/${propertyIdToUse}`);
         
         const response = await fetch(`${baseURL}/api/properties/${propertyIdToUse}`);
         const data = await response.json();
@@ -512,11 +85,11 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
             setCommunityName(name);
           }
         } else {
-          throw new Error(data.message || "Failed to load property details");
+          throw new Error(data.message || "Failed to load building details");
         }
       } catch (err) {
         console.error("Fetch error:", err);
-        setError(err.message || "Failed to load property details");
+        setError(err.message || "Failed to load building details");
       } finally {
         setLoading(false);
       }
@@ -670,7 +243,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
             style={{ borderColor: theme.headerBg || "#6366f1" }}
           ></div>
           <p style={{ color: themeUtils.getTextColor(true) }}>
-            Loading property details...
+            Loading building details...
           </p>
         </div>
       </div>
@@ -678,7 +251,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
   }
 
   if (error || !property) {
-    const errorMessage = error || "Property not found";
+    const errorMessage = error || "Building not found";
     
     if (isModal) {
       return (
@@ -709,7 +282,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
     );
   }
 
-  console.log("Property data:", property);
+  console.log("Building data:", property);
 
   return (
     <>
@@ -719,7 +292,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
           <CardHeader>
             <div className="flex items-center justify-between mb-6">
               <CardTitle themeUtils={themeUtils}>
-                Property Information
+                Building Information
               </CardTitle>
               <Button
                 variant="ghost"
@@ -801,7 +374,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                       borderColor: themeUtils.getBorderColor() 
                     }}
                   >
-                    Property Details
+                    Building Details
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -810,7 +383,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                       <div className="flex items-start gap-3">
                         <Building className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
                         <div>
-                          <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Property Name</p>
+                          <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Building Name</p>
                           <p className="text-base font-medium" style={{ color: themeUtils.getTextColor(true) }}>
                             {property.property_name || "N/A"}
                           </p>
@@ -822,7 +395,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                       <div className="flex items-start gap-3">
                         <Hash className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
                         <div>
-                          <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Property Code</p>
+                          <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Building Code</p>
                           <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
                             {property.property_code || "N/A"}
                           </p>
@@ -1007,48 +580,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
               </div>
             </div>
 
-            {/* Units Table Section */}
-            {/* <div 
-              className="rounded-lg border overflow-hidden"
-              style={{ 
-                borderColor: themeUtils.getBorderColor(),
-                backgroundColor: themeUtils.getBgColor("card")
-              }}
-            >
-              <div 
-                className="px-4 py-3 border-b"
-                style={{ borderColor: themeUtils.getBorderColor() }}
-              >
-                <h3 
-                  className="text-md font-semibold"
-                  style={{ color: theme.headerBg || "#6366f1" }}
-                >
-                  Units in this Property
-                </h3>
-              </div>
-              
-              <div className="p-4">
-                {loadingUnits ? (
-                  <div className="flex justify-center py-8">
-                    <div
-                      className="animate-spin rounded-full h-8 w-8 border-b-2"
-                      style={{ borderColor: theme.headerBg || "#6366f1" }}
-                    ></div>
-                  </div>
-                ) : units.length > 0 ? (
-                  <Table
-                    headers={unitHeaders}
-                    data={units}
-                    renderRow={renderUnitRow}
-                    themeUtils={themeUtils}
-                  />
-                ) : (
-                  <p className="text-center py-8" style={{ color: themeUtils.getTextColor(false, true) }}>
-                    No units found for this property
-                  </p>
-                )}
-              </div>
-            </div> */}
+            
           </div>
         </div>
 

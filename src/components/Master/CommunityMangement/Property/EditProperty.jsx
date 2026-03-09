@@ -207,8 +207,8 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
         id;
 
       if (!propertyId) {
-        console.error("No property ID available");
-        toast.error("Error", "No property ID found. Please go back and try again.");
+        console.error("No building ID available");
+        toast.error("Error", "No building ID found. Please go back and try again.");
         if (!isModal) navigate("/community-management/Property");
         setLoading(false);
         return;
@@ -216,24 +216,24 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
 
       try {
         setLoading(true);
-        console.log("Fetching complete property data for ID:", propertyId);
+        console.log("Fetching complete building data for ID:", propertyId);
         
         // Always fetch from API to get complete data
         const response = await fetch(`${baseURL}/api/properties/${propertyId}`);
         const data = await response.json();
 
-        console.log("Complete property data from API:", data);
+        console.log("Complete building data from API:", data);
 
         if (response.ok) {
           const propertyData = data.data || data;
           setOriginalProperty(propertyData);
           populateForm(propertyData);
         } else {
-          throw new Error(data.message || "Failed to load property details");
+          throw new Error(data.message || "Failed to load building details");
         }
       } catch (error) {
-        console.error("Error fetching property:", error);
-        toast.error("Error", error.message || "Failed to load property details");
+        console.error("Error fetching building:", error);
+        toast.error("Error", error.message || "Failed to load building details");
         if (!isModal) navigate("/community-management/Property");
       } finally {
         setLoading(false);
@@ -244,7 +244,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
   }, [id, propProperty, location.state, isModal, baseURL]);
 
   const populateForm = (property) => {
-    console.log("Populating form with complete property data:", property);
+    console.log("Populating form with complete building data:", property);
 
     // Extract contact number and country code
     let contactNumber = "";
@@ -332,7 +332,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
         if (!value) return "Community is required";
         return "";
       case "property_name":
-        if (!value.trim()) return "Property name is required";
+        if (!value.trim()) return "Building name is required";
         return "";
       case "country_code":
         if (!value) return "Country code is required";
@@ -374,7 +374,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
     }
 
     if (!form.property_name.trim()) {
-      newErrors.property_name = "Property name is required";
+      newErrors.property_name = "Building name is required";
       isValid = false;
     }
 
@@ -482,7 +482,7 @@ const handleInputChange = (field, value) => {
       id;
 
     if (!propertyId) {
-      toast.error("Error", "Property ID is missing. Please go back and try again.");
+      toast.error("Error", "Building ID is missing. Please go back and try again.");
       return;
     }
 
@@ -557,11 +557,11 @@ const handleInputChange = (field, value) => {
           }
         }, 1000);
       } else {
-        throw new Error(data.message || data.error || "Failed to update property");
+        throw new Error(data.message || data.error || "Failed to update building");
       }
     } catch (error) {
       console.error("Update error:", error);
-      toast.error("Error", error.message || "Failed to update property");
+      toast.error("Error", error.message || "Failed to update building. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -597,7 +597,7 @@ const handleInputChange = (field, value) => {
             style={{ borderColor: theme.headerBg || "#6366f1" }}
           ></div>
           <p className="mt-4" style={{ color: themeUtils.getTextColor(true) }}>
-            Loading Property details...
+            Loading Building details...
           </p>
         </div>
       </div>
@@ -610,7 +610,7 @@ const handleInputChange = (field, value) => {
         <CardHeader>
           <div className="flex items-center justify-between py-2">
             <div>
-              <CardTitle themeUtils={themeUtils}>Edit Property</CardTitle>
+              <CardTitle themeUtils={themeUtils}>Edit Building</CardTitle>
             </div>
 
             <div>
@@ -645,7 +645,7 @@ const handleInputChange = (field, value) => {
                     className="text-sm font-medium mb-3"
                     style={{ color: themeUtils.getTextColor(true) }}
                   >
-                    Property Image
+                    Building Image
                   </h3>
 
                   {/* Image Preview or Upload Area */}
@@ -653,7 +653,7 @@ const handleInputChange = (field, value) => {
                     <div className="relative">
                       <img
                         src={previewUrl}
-                        alt="Property"
+                        alt="Building"
                         className="w-full h-48 object-cover rounded-lg"
                       />
                       <button
@@ -766,7 +766,7 @@ const handleInputChange = (field, value) => {
                         className="block text-sm font-medium"
                         style={{ color: themeUtils.getTextColor(false) }}
                       >
-                        Property Name *
+                        Building Name *
                       </label>
                       <span
                         className="text-xs"
@@ -988,15 +988,7 @@ const handleInputChange = (field, value) => {
                   </div>
                 </div>
 
-                {/* Row 4: Total Units - MOVED TO NEW ROW */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Total Units */}
-                  
-                  
-                  {/* Empty div to maintain grid layout */}
-                  <div></div>
-                </div>
-
+              
                 {/* Description */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
@@ -1004,7 +996,7 @@ const handleInputChange = (field, value) => {
                       className="block text-sm font-medium"
                       style={{ color: themeUtils.getTextColor(false) }}
                     >
-                      Property Description
+                      Building Description
                     </label>
                     <span
                       className="text-xs"
@@ -1025,7 +1017,7 @@ const handleInputChange = (field, value) => {
                       borderColor: themeUtils.getBorderColor(),
                       color: themeUtils.getTextColor(true),
                     }}
-                    placeholder="Brief description of the property..."
+                    placeholder="Brief description of the building..."
                     maxLength={500}
                     disabled={saving}
                   />
@@ -1280,7 +1272,7 @@ const handleInputChange = (field, value) => {
                 size="sm"
                 className={!isFormValid() ? "opacity-50 cursor-not-allowed" : ""}
               >
-                {saving ? "Updating..." : "Update Property"}
+                {saving ? "Updating..." : "Update Building"}
               </Button>
             </div>
           </div>
