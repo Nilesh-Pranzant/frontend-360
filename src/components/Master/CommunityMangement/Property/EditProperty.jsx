@@ -29,6 +29,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
   const [existingImage, setExistingImage] = useState(null);
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
+  const [originalProperty, setOriginalProperty] = useState(null);
 
   // Base URL for API
   const baseURL = propBaseURL || API_URL_PROPERTY || "http://192.168.1.39:5000";
@@ -112,6 +113,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
     country_code: "+971",
     manager_name: "",
     manager_contact: "",
+    total_floors: "", // Added total_floors field
     total_units: "",
     property_description: "",
   });
@@ -126,6 +128,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
     country_code: "",
     manager_name: "",
     manager_contact: "",
+    total_floors: "", // Added total_floors error field
     total_units: "",
     property_description: "",
   });
@@ -192,9 +195,9 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
     fetchCommunities();
   }, [communityBaseURL]);
 
-  // Fetch property data
+  // Fetch complete property data from API
   useEffect(() => {
-    const fetchProperty = async () => {
+    const fetchCompleteProperty = async () => {
       // Get property ID
       const propertyId = 
         propProperty?.property_id || 
@@ -211,21 +214,19 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
         return;
       }
 
-      // If we have the full property object from props, use it directly
-      if (propProperty) {
-        populateForm(propProperty);
-        setLoading(false);
-        return;
-      }
-
-      // Otherwise fetch from API
       try {
         setLoading(true);
+        console.log("Fetching complete property data for ID:", propertyId);
+        
+        // Always fetch from API to get complete data
         const response = await fetch(`${baseURL}/api/properties/${propertyId}`);
         const data = await response.json();
 
+        console.log("Complete property data from API:", data);
+
         if (response.ok) {
           const propertyData = data.data || data;
+          setOriginalProperty(propertyData);
           populateForm(propertyData);
         } else {
           throw new Error(data.message || "Failed to load property details");
@@ -239,11 +240,11 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
       }
     };
 
-    fetchProperty();
+    fetchCompleteProperty();
   }, [id, propProperty, location.state, isModal, baseURL]);
 
   const populateForm = (property) => {
-    console.log("Populating form with property:", property);
+    console.log("Populating form with complete property data:", property);
 
     // Extract contact number and country code
     let contactNumber = "";
@@ -266,20 +267,24 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
     setForm({
       community_id: property.community_id || "",
       property_name: property.property_name || "",
-      address_line1: property.address_line1 || property.location || "",
+      address_line1: property.address_line1 || "",
       address_line2: property.address_line2 || "",
       city: property.city || "",
       country_code: countryCode,
       manager_name: property.manager_name || "",
       manager_contact: contactNumber,
-      total_units: property.total_units?.toString() || "",
+      total_floors: property.total_floors?.toString() || "", // Added total_floors
+      total_units: property.total_units?.toString() || "0",
       property_description: property.property_description || property.description || "",
     });
 
     // Set existing image if available
     if (property.property_image) {
-      setExistingImage(`${baseURL}${property.property_image}`);
-      setPreviewUrl(`${baseURL}${property.property_image}`);
+      const imageUrl = property.property_image.startsWith('http') 
+        ? property.property_image 
+        : `${baseURL}${property.property_image}`;
+      setExistingImage(imageUrl);
+      setPreviewUrl(imageUrl);
     }
   };
 
@@ -332,6 +337,16 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
       case "country_code":
         if (!value) return "Country code is required";
         return "";
+      case "total_floors":
+        if (value && (parseInt(value) < 0 || parseInt(value) > 1000)) {
+          return "Total floors must be between 0 and 1000";
+        }
+        return "";
+      case "total_units":
+        if (value && (parseInt(value) < 0 || parseInt(value) > 10000)) {
+          return "Total units must be between 0 and 10000";
+        }
+        return "";
       default:
         return "";
     }
@@ -347,6 +362,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
       country_code: "",
       manager_name: "",
       manager_contact: "",
+      total_floors: "",
       total_units: "",
       property_description: "",
     };
@@ -367,22 +383,70 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
       isValid = false;
     }
 
+    // Validate total_floors if provided
+    if (form.total_floors) {
+      const floorsError = validateField("total_floors", form.total_floors);
+      if (floorsError) {
+        newErrors.total_floors = floorsError;
+        isValid = false;
+      }
+    }
+
+    // Validate total_units if provided
+    if (form.total_units) {
+      const unitsError = validateField("total_units", form.total_units);
+      if (unitsError) {
+        newErrors.total_units = unitsError;
+        isValid = false;
+      }
+    }
+
     setErrors(newErrors);
     return isValid;
   };
 
-  const handleInputChange = (field, value) => {
-    setForm({
-      ...form,
-      [field]: value,
-    });
-
-    const error = validateField(field, value);
-    setErrors({
-      ...errors,
-      [field]: error,
-    });
+const handleInputChange = (field, value) => {
+  const updatedForm = {
+    ...form,
+    [field]: value,
   };
+
+  setForm(updatedForm);
+
+  let newErrors = { ...errors };
+
+  const floors = parseInt(updatedForm.total_floors || 0);
+  const units = parseInt(updatedForm.total_units || 0);
+
+  // Floors validation
+  if (field === "total_floors") {
+    if (floors < 0) {
+      newErrors.total_floors = "Total floors cannot be negative";
+    } 
+    else if (units && floors > units) {
+      newErrors.total_floors = "Total floors must be less than or equal to total units";
+    } 
+    else {
+      newErrors.total_floors = "";
+    }
+  }
+
+  // Units validation
+  if (field === "total_units") {
+    if (units < 0) {
+      newErrors.total_units = "Total units cannot be negative";
+    } 
+    else if (floors && floors > units) {
+      newErrors.total_units = "Total units must be greater than or equal to total floors";
+    } 
+    else {
+      newErrors.total_units = "";
+      newErrors.total_floors = "";
+    }
+  }
+
+  setErrors(newErrors);
+};
 
   const handleCountryChange = (code) => {
     setForm({
@@ -412,10 +476,9 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
   const handleSubmit = async () => {
     // Get property ID
     const propertyId = 
+      originalProperty?.property_id || 
       propProperty?.property_id || 
       propProperty?.id || 
-      location.state?.property?.property_id ||
-      location.state?.property?.id ||
       id;
 
     if (!propertyId) {
@@ -437,53 +500,57 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
       // Get user ID
       const userId = getCurrentUserId();
 
-      // Create FormData for API call
-      const formData = new FormData();
-      
-      // Prepare JSON data matching the structure expected by your backend
+      // Prepare JSON data
       const jsonData = {
         community_id: parseInt(form.community_id),
         property_name: form.property_name.trim(),
-        address_line1: form.address_line1.trim() || null,
+        address_line1: form.address_line1?.trim() || null,
         address_line2: form.address_line2?.trim() || null,
-        city: form.city.trim() || null,
+        city: form.city?.trim() || null,
         country: selectedCountryName,
         manager_name: form.manager_name?.trim() || null,
         manager_contact: form.manager_contact ? `${form.country_code}${form.manager_contact}` : null,
+        total_floors: form.total_floors ? parseInt(form.total_floors) : null, // Added total_floors
         total_units: form.total_units ? parseInt(form.total_units) : 0,
         property_description: form.property_description?.trim() || null,
         updated_by: userId
       };
 
-      console.log("Updating property with data:", jsonData);
-      console.log("Property ID:", propertyId);
+      console.log("Sending update data:", jsonData);
 
-      // Append the JSON data as a string
-      formData.append('data', JSON.stringify(jsonData));
+      let response;
       
-      // Append file if selected
       if (file) {
+        // Use FormData if there's a file
+        const formData = new FormData();
+        formData.append('data', JSON.stringify(jsonData));
         formData.append('property_image', file);
+        
+        response = await fetch(`${baseURL}/api/properties/${propertyId}`, {
+          method: 'PUT',
+          body: formData,
+        });
+      } else {
+        // Send as JSON directly
+        response = await fetch(`${baseURL}/api/properties/${propertyId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(jsonData),
+        });
       }
-
-      // Make API call
-      const response = await fetch(`${baseURL}/api/properties/${propertyId}`, {
-        method: 'PUT',
-        body: formData,
-      });
 
       const data = await response.json();
       console.log("Server response:", data);
 
       if (response.ok) {
-        toast.success("Success", "Property updated successfully!");
+        // toast.success("Success", "Property updated successfully!");
 
-        // Call onSuccess callback to refresh the list
         if (onSuccess) {
           onSuccess(data);
         }
         
-        // Close the drawer after a short delay
         setTimeout(() => {
           if (onClose) {
             onClose();
@@ -566,7 +633,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
           <div className="flex-1 overflow-y-auto">
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Left Column: Image Upload */}
-              <div className="lg:col-span-1 flex items-center justify-center">
+              <div className="lg:col-span-1 flex items-start justify-center ">
                 <div
                   className="p-5 rounded-lg border w-full"
                   style={{
@@ -582,10 +649,10 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
                   </h3>
 
                   {/* Image Preview or Upload Area */}
-                  {(previewUrl || existingImage) ? (
+                  {previewUrl  ? (
                     <div className="relative">
                       <img
-                        src={previewUrl || existingImage}
+                        src={previewUrl}
                         alt="Property"
                         className="w-full h-48 object-cover rounded-lg"
                       />
@@ -593,21 +660,12 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
                         onClick={handleRemoveImage}
                         className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                         type="button"
-                        disabled={saving}
+                    
                       >
                         <X size={16} />
                       </button>
                       
-                      {/* Pencil overlay for editing */}
-                      <div
-                        onClick={() => !saving && document.getElementById('property-image')?.click()}
-                        className="absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-lg"
-                      >
-                        <div className="flex flex-col items-center gap-2">
-                          <Pencil className="w-6 h-6 text-white" />
-                          <span className="text-white text-xs font-medium">Change Image</span>
-                        </div>
-                      </div>
+                      
                     </div>
                   ) : (
                     <div
@@ -616,7 +674,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
                         borderColor: themeUtils.getBorderColor(),
                         backgroundColor: themeUtils.getBgColor("hover"),
                       }}
-                      onClick={() => !saving && document.getElementById('property-image')?.click()}
+                      onClick={() => document.getElementById('property-image')?.click()}
                     >
                       <Upload
                         size={32}
@@ -818,8 +876,8 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
                   </div>
                 </div>
 
-                {/* Row 3: City and Total Units */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Row 3: City and Total Floors */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* City */}
                   <div>
                     <div className="flex justify-between items-center mb-1">
@@ -854,7 +912,6 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
                     />
                   </div>
 
-                  {/* Total Units */}
                   <div>
                     <label
                       className="block text-sm font-medium mb-1"
@@ -869,16 +926,75 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
                         handleInputChange("total_units", e.target.value)
                       }
                       min="0"
-                      className="w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400"
+                      max="10000"
+                      className={`w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                        errors.total_units
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                          : ""
+                      }`}
                       style={{
                         backgroundColor: themeUtils.getBgColor("input"),
-                        borderColor: themeUtils.getBorderColor(),
+                        borderColor: errors.total_units
+                          ? "#ef4444"
+                          : themeUtils.getBorderColor(),
                         color: themeUtils.getTextColor(true),
                       }}
                       placeholder="0"
                       disabled={saving}
                     />
+                    {errors.total_units && (
+                      <p className="mt-0.5 text-xs text-red-500 flex items-center gap-1">
+                        <span>⚠</span> {errors.total_units}
+                      </p>
+                    )}
                   </div>
+
+                  {/* Total Floors - NEW FIELD */}
+                  <div>
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      style={{ color: themeUtils.getTextColor(false) }}
+                    >
+                      Total Floors
+                    </label>
+                    <input
+                      type="number"
+                      value={form.total_floors}
+                      onChange={(e) =>
+                        handleInputChange("total_floors", e.target.value)
+                      }
+                      min="0"
+                      max="1000"
+                      className={`w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                        errors.total_floors
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                          : ""
+                      }`}
+                      style={{
+                        backgroundColor: themeUtils.getBgColor("input"),
+                        borderColor: errors.total_floors
+                          ? "#ef4444"
+                          : themeUtils.getBorderColor(),
+                        color: themeUtils.getTextColor(true),
+                      }}
+                      placeholder="e.g. 25"
+                      disabled={saving}
+                    />
+                    {errors.total_floors && (
+                      <p className="mt-0.5 text-xs text-red-500 flex items-center gap-1">
+                        <span>⚠</span> {errors.total_floors}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 4: Total Units - MOVED TO NEW ROW */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Total Units */}
+                  
+                  
+                  {/* Empty div to maintain grid layout */}
+                  <div></div>
                 </div>
 
                 {/* Description */}
@@ -1014,7 +1130,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
                                 </div>
 
                                 {/* Country List */}
-                                <div className="max-h-60 overflow-y-auto">
+                                <div className="max-h-60 ">
                                   {filteredCountries.length > 0 ? (
                                     filteredCountries.map((country) => (
                                       <button

@@ -460,7 +460,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
 
       // Check the response format from your database function
       if (data.success || (data.id && data.message)) {
-        toast.success("Success", "Community added successfully!");
+        // toast.success("Success", "Community added successfully!");
         if (onSuccess) onSuccess(data);
         if (onClose) onClose();
       } else {

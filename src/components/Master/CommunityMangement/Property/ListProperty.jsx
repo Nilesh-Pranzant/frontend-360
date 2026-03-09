@@ -206,6 +206,7 @@ const ListProperty = () => {
       "Property Name",
       "City",
       // "Country",
+      "Total Floors",
       "Total Units",
     ];
 
@@ -218,6 +219,7 @@ const ListProperty = () => {
           `"${p.PropertyName?.replace(/"/g, '""') || ""}"`,
           `"${p.city?.replace(/"/g, '""') || ""}"`,
           // `"${p.country?.replace(/"/g, '""') || ""}"`,
+          p.totalFloors || 0,
           p.totalUnits || 0,
         ].join(",")
       ),
@@ -245,6 +247,7 @@ const ListProperty = () => {
     "Property Name",
     "City",
     // "Country",
+    "Total Floors",
     "Total Units",
     "Actions",
   ];
@@ -295,6 +298,13 @@ const ListProperty = () => {
       </td> */}
 
       <td
+        className="px-4 py-2 text-center text-sm"
+        style={{ color: themeUtils.getTextColor(true) }}
+      >
+        {property.totalFloors || 0}
+      </td>
+
+            <td
         className="px-4 py-2 text-center text-sm"
         style={{ color: themeUtils.getTextColor(true) }}
       >

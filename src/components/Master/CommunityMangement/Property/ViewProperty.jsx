@@ -804,7 +804,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                     Property Details
                   </h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Left Column */}
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
@@ -817,15 +817,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                         </div>
                       </div>
 
-                      <div className="flex items-start gap-3">
-                        <Home className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
-                        <div>
-                          <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Community</p>
-                          <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                            {communityName || `ID: ${property.community_id || "N/A"}`}
-                          </p>
-                        </div>
-                      </div>
+                   
 
                       <div className="flex items-start gap-3">
                         <Hash className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
@@ -847,18 +839,10 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                         </div>
                       </div>
 
-                      <div className="flex items-start gap-3">
-                        <Globe className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
-                        <div>
-                          <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>City, Country</p>
-                          <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                            {property?.city || "-"}, {property?.country || "UAE"}
-                          </p>
-                        </div>
-                      </div>
+                     
                     </div>
 
-                    {/* Right Column */}
+                    {/* center Column */}
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
                         <User className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
@@ -879,8 +863,30 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                           </p>
                         </div>
                       </div>
+                       <div className="flex items-start gap-3">
+                        <Globe className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
+                        <div>
+                          <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>City, Country</p>
+                          <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
+                            {property?.city || "-"}, {property?.country || "UAE"}
+                          </p>
+                        </div>
+                      </div>
 
-                      <div className="flex items-start gap-3">
+                     
+                    </div>
+                     {/* right Column */}
+                     <div className="space-y-4">
+                        <div className="flex items-start gap-3">
+                        <Home className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
+                        <div>
+                          <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Community</p>
+                          <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
+                            {communityName || `ID: ${property.community_id || "N/A"}`}
+                          </p>
+                        </div>
+                      </div>
+ <div className="flex items-start gap-3">
                         <Layers className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
                         <div>
                           <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Total Floors</p>
@@ -899,6 +905,9 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                           </p>
                         </div>
                       </div>
+                     
+
+                    
                     </div>
                   </div>
                 </div>

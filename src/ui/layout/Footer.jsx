@@ -16,7 +16,7 @@ const Footer = () => {
     >
       <div className="max-w-7xl mx-auto h-full flex items-center justify-center px-2">
         <p className="text-sm" style={{ color: themeUtils.getTextColor(false) }}>
-          © 2025 RajYug IT Solutions LLC. All rights reserved.
+          © 2026 RajYug IT Solutions LLC. All rights reserved.
         </p>
       </div>
     </footer>

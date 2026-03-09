@@ -81,11 +81,22 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
 
       try {
         setLoadingProperties(true);
-        const response = await fetch(`${propertyBaseURL}/api/properties?community_id=${form.community_id}`);
+        const response = await fetch(
+          `${propertyBaseURL}/api/properties/by-community/${form.community_id}`
+        );
         const data = await response.json();
+        console.log("Fetched properties:", data); // Debug log
 
         if (response.ok) {
-          setProperties(data);
+          // setProperties(data.data);
+          // setProperties(Array.isArray(data.data) ? data.data : []);
+          setProperties(
+            data.data.map(p => ({
+              ...p,
+              property_id: Number(p.property_id),
+              total_floors: Number(p.total_floors)
+            }))
+          );
         } else {
           console.error("Error fetching properties:", data);
           toast.error("Error", "Failed to load properties");
@@ -115,11 +126,22 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
   useEffect(() => {
     if (form.property_id) {
       const selectedProperty = properties.find(p => p.property_id === parseInt(form.property_id));
+      console.log("Selected property ID:", form.property_id); // Debug log
+      console.log("Selected property for name update:", selectedProperty); // Debug log
       if (selectedProperty) {
         setForm(prev => ({ ...prev, property_name: selectedProperty.property_name }));
       }
     }
   }, [form.property_id, properties]);
+
+  const selectedProperty = properties.find(
+    (p) => p.property_id === parseInt(form.property_id)
+  );
+
+  const floors = Number(selectedProperty?.total_floors || 0);
+
+  // const floors = selectedProperty?.total_floors || 0;
+
 
   const handleSubmit = async () => {
     // Validation - required fields
@@ -150,7 +172,7 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
         floor_number: form.floor_number ? parseInt(form.floor_number) : null, // Changed to floor_number and parse as integer
         unit_type: form.unit_type || null,
         status: form.status || "unsold",
-        description: form.description || null
+        unit_description: form.description || null
       };
 
       console.log("Sending unit data:", unitData); // Debug log
@@ -167,7 +189,7 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Success", "Unit added successfully!");
+        // toast.success("Success", "Unit added successfully!");
 
         setTimeout(() => {
           if (onSuccess) onSuccess(data);
@@ -311,7 +333,7 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                 </label>
                 <select
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  onChange={(e) => setForm({ ...form, status: e.target.value, customer_name: e.target.value === "unsold" ? "" : form.customer_name })}
                   className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{
                     backgroundColor: themeUtils.getBgColor("input"),
@@ -343,28 +365,14 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                   }}
                   disabled={loading}
                 >
-                  <option value="">Select Floor (optional)</option>
+                  <option value="">Select Floor</option>
                   <option value="0">Ground Floor</option>
-                  <option value="1">1st Floor</option>
-                  <option value="2">2nd Floor</option>
-                  <option value="3">3rd Floor</option>
-                  <option value="4">4th Floor</option>
-                  <option value="5">5th Floor</option>
-                  <option value="6">6th Floor</option>
-                  <option value="7">7th Floor</option>
-                  <option value="8">8th Floor</option>
-                  <option value="9">9th Floor</option>
-                  <option value="10">10th Floor</option>
-                  <option value="11">11th Floor</option>
-                  <option value="12">12th Floor</option>
-                  <option value="13">13th Floor</option>
-                  <option value="14">14th Floor</option>
-                  <option value="15">15th Floor</option>
-                  <option value="16">16th Floor</option>
-                  <option value="17">17th Floor</option>
-                  <option value="18">18th Floor</option>
-                  <option value="19">19th Floor</option>
-                  <option value="20">20th Floor</option>
+
+                  {[...Array(floors)].map((_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      Floor {i + 1}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -411,7 +419,7 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                     borderColor: themeUtils.getBorderColor(),
                   }}
                   placeholder="Enter customer name (optional)"
-                  disabled={loading}
+                  disabled={loading || form.status === "unsold"}
                 />
               </div>
 

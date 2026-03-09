@@ -146,15 +146,12 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
         
         // Populate form with unit data
         if (unitData) {
-          console.log("Unit data from API:", unitData);
+          console.log("Unit data from API:", unitData); // Debug log
           
           // Normalize status to lowercase to match select options
           const statusValue = unitData.status ? unitData.status.toLowerCase() : "unsold";
           
-          // Get description from either unit_description or description field
-          const descriptionValue = unitData.unit_description || unitData.description || "";
-          
-          console.log("Description value:", descriptionValue);
+          console.log("Normalized status value:", statusValue); // Debug log
           
           setForm({
             unit_id: unitData.unit_id || unitData.id || "",
@@ -166,8 +163,8 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
             customer_name: unitData.customer_name || "",
             floor_number: unitData.floor_number !== null && unitData.floor_number !== undefined ? String(unitData.floor_number) : "",
             unit_type: unitData.unit_type || "",
-            status: statusValue,
-            description: descriptionValue
+            status: statusValue, // Use lowercase status
+            description: unitData.unit_description || unitData.description || ""
           });
           
           // Fetch properties for this community
@@ -228,16 +225,15 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
     try {
       setSaving(true);
 
-      // Send data with unit_description to match PostgreSQL function
       const unitData = {
         community_id: parseInt(form.community_id),
         property_id: parseInt(form.property_id),
         unit_number: form.unit_number,
         customer_name: form.customer_name || null,
         floor_number: form.floor_number ? parseInt(form.floor_number) : null,
-        unit_type: form.unit_type || null,
+        unit_type: form.unit_type || null,   
         status: form.status || "unsold",
-        unit_description: form.description || null  // Send as unit_description to match DB function
+        unit_description: form.description || null
       };
 
       console.log("Updating unit with data:", unitData);
@@ -373,7 +369,7 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
                 />
               </div>
 
-              {/* Status */}
+              {/* Status - Now properly shows the value */}
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
                   Status

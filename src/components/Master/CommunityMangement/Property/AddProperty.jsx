@@ -1,3 +1,5 @@
+
+
 // import React, { useState, useEffect } from "react";
 // import { Upload, X, ChevronDown, Search } from "lucide-react";
 // import { useTheme } from "../../../../ui/Settings/themeUtils";
@@ -421,7 +423,6 @@
 //   const handlePhoneChange = (value) => {
 //     const requiredDigits = getCurrentCountryDigits();
 //     const digitsOnly = value.replace(/\D/g, "");
-//     // Don't truncate if empty
 //     const truncated = value ? digitsOnly.slice(0, requiredDigits) : "";
 //     handleInputChange("manager_contact", truncated);
 //   };
@@ -435,17 +436,6 @@
 //     setLoading(true);
 
 //     try {
-//       // Generate a property code
-//       const generatePropertyCode = () => {
-//         const date = new Date();
-//         const dateStr = date.toISOString().slice(0,10).replace(/-/g, '');
-//         const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-//         return `PROP-${dateStr}-${randomNum}`;
-//       };
-
-//       // Get the country name from the selected country code (not sending to DB)
-//       const selectedCountryName = selectedCountry?.country || 'UAE';
-      
 //       // Get user ID
 //       const userId = getCurrentUserId();
 //       if (!userId) {
@@ -453,9 +443,8 @@
 //       }
 
 //       // Prepare JSON data matching the database function parameters
-//       // All fields included except 'country' (as requested)
+//       // (property_code is NOT sent because your function generates it automatically)
 //       const jsonData = {
-//         property_code: generatePropertyCode(),
 //         property_name: form.property_name.trim(),
 //         community_id: parseInt(form.community_id),
 //         address_line1: form.address1.trim(),
@@ -503,8 +492,8 @@
 //       const data = await response.json();
 //       console.log("Server response:", data);
 
-//       // Check the response format
-//       if (data.success || (data.id && data.message)) {
+//       // Check the response format (matches your function exactly)
+//       if (data.success === true) {
 //         toast.success("Success", "Property added successfully!");
 //         if (onSuccess) onSuccess(data);
 //         if (onClose) onClose();
@@ -1198,8 +1187,6 @@
 
 
 
-//updated code
-
 import React, { useState, useEffect } from "react";
 import { Upload, X, ChevronDown, Search } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
@@ -1227,6 +1214,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
     manager_name: "",
     manager_contact: "",
     total_units: "",
+    total_floors: "",  // Added total_floors field
     description: "",
   });
 
@@ -1241,6 +1229,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
     manager_name: "",
     manager_contact: "",
     total_units: "",
+    total_floors: "",  // Added total_floors error field
     description: "",
   });
 
@@ -1424,6 +1413,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
       manager_name: "",
       manager_contact: "",
       total_units: "",
+      total_floors: "",
       description: "",
     };
     let isValid = true;
@@ -1509,9 +1499,24 @@ const AddProperty = ({ onClose, onSuccess }) => {
       isValid = false;
     }
 
+    // Total Floors validation
+    if (form.total_floors && parseInt(form.total_floors) < 0) {
+      newErrors.total_floors = "Total floors cannot be negative";
+      isValid = false;
+    }
+
     // Description validation
     if (form.description && form.description.length > 500) {
       newErrors.description = "Description cannot exceed 500 characters";
+      isValid = false;
+    }
+
+    if (
+      form.total_floors &&
+      form.total_units &&
+      parseInt(form.total_floors) > parseInt(form.total_units)
+    ) {
+      newErrors.total_floors = "Total floors must be less than total units";
       isValid = false;
     }
 
@@ -1580,6 +1585,11 @@ const AddProperty = ({ onClose, onSuccess }) => {
           return "Total units cannot be negative";
         return "";
 
+      case "total_floors":
+        if (value && parseInt(value) < 0)
+          return "Total floors cannot be negative";
+        return "";
+
       case "description":
         if (value && value.length > 500)
           return "Description cannot exceed 500 characters";
@@ -1643,7 +1653,6 @@ const AddProperty = ({ onClose, onSuccess }) => {
       }
 
       // Prepare JSON data matching the database function parameters
-      // (property_code is NOT sent because your function generates it automatically)
       const jsonData = {
         property_name: form.property_name.trim(),
         community_id: parseInt(form.community_id),
@@ -1653,6 +1662,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
         manager_name: form.manager_name?.trim() || '',
         manager_contact: form.manager_contact ? `${form.country_code}${form.manager_contact}` : '',
         total_units: form.total_units ? parseInt(form.total_units) : 0,
+        total_floors: form.total_floors ? parseInt(form.total_floors) : 0,  // Added total_floors to API data
         property_description: form.description?.trim() || '',
         created_by: userId
       };
@@ -1692,9 +1702,9 @@ const AddProperty = ({ onClose, onSuccess }) => {
       const data = await response.json();
       console.log("Server response:", data);
 
-      // Check the response format (matches your function exactly)
+      // Check the response format
       if (data.success === true) {
-        toast.success("Success", "Property added successfully!");
+        // toast.success("Success", "Property added successfully!");
         if (onSuccess) onSuccess(data);
         if (onClose) onClose();
       } else {
@@ -1991,8 +2001,8 @@ const AddProperty = ({ onClose, onSuccess }) => {
               </div>
             </div>
 
-            {/* Row 3: City and Total Units */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {/* Row 3: City, Total Units, and Total Floors */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               {/* City */}
               <div>
                 <div className="flex justify-between items-center mb-1">
@@ -2037,6 +2047,44 @@ const AddProperty = ({ onClose, onSuccess }) => {
                 )}
               </div>
  
+
+
+              {/* Total Floors */}
+              <div>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: themeUtils.getTextColor(false) }}
+                >
+                  Total Floors
+                </label>
+                <input
+                  type="number"
+                  value={form.total_floors}
+                  onChange={(e) =>
+                    handleInputChange("total_floors", e.target.value)
+                  }
+                  min="0"
+                  className={`w-full px-3 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400 ${
+                    errors.total_floors
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
+                  }`}
+                  style={{
+                    backgroundColor: themeUtils.getBgColor("input"),
+                    borderColor: errors.total_floors
+                      ? "#ef4444"
+                      : themeUtils.getBorderColor(),
+                    color: themeUtils.getTextColor(true),
+                  }}
+                  placeholder="0"
+                />
+                {errors.total_floors && (
+                  <p className="mt-0.5 text-[10px] text-red-500 flex items-center gap-1">
+                    <span>⚠</span> {errors.total_floors}
+                  </p>
+                )}
+              </div>
+
               {/* Total Units */}
               <div>
                 <label
@@ -2072,6 +2120,8 @@ const AddProperty = ({ onClose, onSuccess }) => {
                   </p>
                 )}
               </div>
+
+
             </div>
 
             {/* Description */}

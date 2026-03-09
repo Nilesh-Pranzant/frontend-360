@@ -131,12 +131,15 @@ const UnitList = () => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
   };
+const getStatusColor = (status) => {
+  const normalizedStatus = status?.trim().toLowerCase();
 
-  const getStatusColor = (status) => {
-    if (status === "Sold") return "text-green-600 font-medium";
-   
-    return "text-red-600 font-medium";
-  };
+  if (normalizedStatus === "sold") {
+    return "text-green-600 font-medium";
+  }
+
+  return "text-red-600 font-medium";
+};
 
   /* ================= FILTER + PAGINATION ================= */
   useEffect(() => {

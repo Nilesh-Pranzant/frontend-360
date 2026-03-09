@@ -1716,7 +1716,7 @@ const EditCommunity = ({ communityId, community, onClose, onSuccess }) => {
 
       // Check the response format
       if (data.success || (data.id && data.message)) {
-        toast.success("Success", "Community updated successfully!");
+        // toast.success("Success", "Community updated successfully!");
         if (onSuccess) onSuccess(data);
         if (onClose) onClose();
       } else {
