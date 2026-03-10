@@ -27,6 +27,8 @@ import AdminRoutes from "./admin/routes/AdminRoutes";
 import ListCommunity from "./components/Master/CommunityMangement/Community/ListCommunity.jsx";
 import UnitList from "./components/Master/CommunityMangement/Unit/UnitList.jsx"
 import ListProperty from "./components/Master/CommunityMangement/Property/ListProperty.jsx"
+import Notification from "./components/Master/Customer/Notification.jsx";
+import ListTemplate from "./components/Master/Customer/ListTemplate.jsx";
 
 
 
@@ -224,6 +226,8 @@ const AppContent = () => {
                           <Route path="/community" element={<ListCommunity />} />
                           <Route path="/unit" element={<UnitList />} />
                           <Route path="/property" element={<ListProperty />} />
+                          <Route path="/notification" element={<Notification />} />
+                          <Route path="/list-templates" element={<ListTemplate />} />
 
 
 

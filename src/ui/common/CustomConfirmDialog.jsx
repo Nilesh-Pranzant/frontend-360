@@ -2,7 +2,17 @@ import React from 'react';
 import { ConfirmDialog } from 'primereact/confirmdialog';
 import { useTheme } from "../../ui/Settings/themeUtils";
 
-const CustomConfirmDialog = ({ visible, onHide, message, header, accept, reject, acceptLabel, rejectLabel }) => {
+const CustomConfirmDialog = ({ 
+  visible, 
+  onHide, 
+  message, 
+  header, 
+  accept, 
+  reject, 
+  acceptLabel, 
+  rejectLabel,
+  width // optional — defaults to '400px' if not passed
+}) => {
   const { themeUtils } = useTheme();
   const isDarkMode = themeUtils?.isDarkMode?.() || false;
   
@@ -16,10 +26,9 @@ const CustomConfirmDialog = ({ visible, onHide, message, header, accept, reject,
       reject={reject}
       acceptLabel={acceptLabel}
       rejectLabel={rejectLabel}
-      style={{ width: '400px' }}
+      style={{ width: width || '400px' }}
       contentStyle={{ padding: '0.5rem' }}
       pt={{
-        // This creates the glass effect overlay behind the dialog
         mask: {
           style: {
             background: isDarkMode 
@@ -29,7 +38,6 @@ const CustomConfirmDialog = ({ visible, onHide, message, header, accept, reject,
             WebkitBackdropFilter: 'blur(8px)',
           }
         },
-        // The dialog itself has normal theme background
         root: { 
           className: 'p-0',
           style: { 
