@@ -177,7 +177,7 @@ const ListCommunity = () => {
       "City",
       "Community Manager",
       "Manager Contact",
-      "Properties",
+      "Buildings",
       "Units",
     ];
 
@@ -234,7 +234,7 @@ const ListCommunity = () => {
     "City",
     "Community Manager",
     "Manager Contact",
-    "Properties",
+    "Buildings",
     "Units",
     "Action",
   ];

@@ -256,7 +256,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
     }
 
     if (form.total_properties && parseInt(form.total_properties) < 0) {
-      newErrors.total_properties = "Total properties cannot be negative";
+      newErrors.total_properties = "Total buildings cannot be negative";
       isValid = false;
     }
 
@@ -328,7 +328,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
 
       case "total_properties":
         if (value && parseInt(value) < 0)
-          return "Total properties cannot be negative";
+          return "Total buildings cannot be negative";
         return "";
 
       case "total_units":
@@ -760,7 +760,7 @@ const AddCommunity = ({ onClose, onSuccess }) => {
                   className="block text-sm font-medium mb-1"
                   style={{ color: themeUtils.getTextColor(false) }}
                 >
-                  Total Properties
+                  Total Buildings
                 </label>
                 <input
                   type="number"

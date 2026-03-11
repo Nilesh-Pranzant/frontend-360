@@ -1,14 +1,8 @@
 
 
+
 import emailjs from "@emailjs/browser";
 import React, { useState, useEffect } from "react";
-import { useTheme } from "../../../ui/Settings/themeUtils";
-import { useToast } from "../../../ui/common/CostumeTost";
-import { CardHeader, CardTitle } from "../../../ui/Common/Card";
-import Button from "../../../ui/Common/Button";
-import CustomConfirmDialog from "../../../ui/common/CustomConfirmDialog";
-import CommonDialog from "../../../ui/Common/CommonDialog";
-import Card from "../../../ui/Common/Card";
 import {
   Users,
   Building2,
@@ -21,7 +15,13 @@ import {
   CheckCircle,
   Plus,
 } from "lucide-react";
-
+import { useTheme } from "../../../ui/Settings/themeUtils";
+import { useToast } from "../../../ui/common/CostumeTost";
+import { CardHeader, CardTitle } from "../../../ui/Common/Card";
+import Button from "../../../ui/Common/Button";
+import CustomConfirmDialog from "../../../ui/common/CustomConfirmDialog";
+import CommonDialog from "../../../ui/Common/CommonDialog";
+import Card from "../../../ui/Common/Card";
 import {
   RiMailSendLine,
   RiCommunityLine,
@@ -38,12 +38,27 @@ import {
 } from "../../../../config";
 
 // Import template components
-import ListTemplate from "./ListTemplate";   // ← Keep this
+import ListTemplate from "./ListTemplate";
 
 // ── API Base URLs ─────────────────────────────────────────────────────────────
 const communityBaseURL = API_URL_COMMUNITY || "http://192.168.1.39:5000";
 const propertyBaseURL  = API_URL_PROPERTY  || "http://192.168.1.39:5000";
 const unitBaseURL      = API_URL_UNIT      || "http://192.168.1.39:5000";
+
+// ── Type colour helper ────────────────────────────────────────────────────────
+const getTypeColor = (type) => {
+  const colors = {
+    Billing: "text-blue-600 bg-blue-50",
+    "Consumption Alert": "text-orange-600 bg-orange-50",
+    "Payment Reminder": "text-red-600 bg-red-50",
+    "Meter Reading": "text-green-600 bg-green-50",
+    "Service Interruption": "text-purple-600 bg-purple-50",
+    Connection: "text-teal-600 bg-teal-50",
+    Disconnection: "text-gray-600 bg-gray-50",
+    Registration: "text-green-600 bg-green-50",
+  };
+  return colors[type] || "text-gray-600 bg-gray-50";
+};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const Notification = () => {
@@ -308,7 +323,7 @@ const Notification = () => {
   const handleSelectTemplate = (template) => {
     setSelectedTemplate(template);
     setIsTemplateAccordionOpen(false);
-    toast.success("Template Selected", `"${template.name}" template is ready to use`);
+    toast.success("Template Selected", `${template.name} is ready to use`);
   };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -457,14 +472,10 @@ const Notification = () => {
         <CardHeader>
           <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 px-6 py-4">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
-                <Bell className="w-6 h-6 text-white" />
-              </div>
+            
               <div>
                 <CardTitle themeUtils={themeUtils}>Send Notification</CardTitle>
-                <p className="text-sm mt-1" style={{ color: themeUtils.getTextColor(false) }}>
-                  Broadcast messages to residents using email templates
-                </p>
+               
               </div>
             </div>
           </div>
@@ -507,7 +518,7 @@ const Notification = () => {
         </div>
 
         {/* Form Content */}
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-6 w-full">
           <div className="max-w-5xl mx-auto space-y-6">
 
             {/* ── Dropdowns Row ── */}
@@ -634,48 +645,48 @@ const Notification = () => {
               }}
             >
               {/* Section Header */}
-            <div 
-  className="px-5 py-4 border-b cursor-pointer  transition-colors" 
-  style={{ borderColor: themeUtils.getBorderColor() }}
-  onClick={() => setIsTemplateAccordionOpen((prev) => !prev)}
->
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-3">
-      <div
-        className="p-2 rounded-xl"
-        style={{ backgroundColor: selectedTemplate ? "#eff6ff" : themeUtils.getBgColor("input") }}
-      >
-        <FileText
-          className="w-5 h-5"
-          style={{ color: selectedTemplate ? "#3b82f6" : themeUtils.getTextColor(false) }}
-        />
-      </div>
-      <div>
-        <p className="font-semibold text-sm flex items-center gap-2" style={{ color: themeUtils.getTextColor(true) }}>
-          Select Email Template
-          <span className="text-red-500">*</span>
-          {selectedTemplate && (
-            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-              <CheckCircle className="w-3 h-3" /> Selected: {selectedTemplate.name}
-            </span>
-          )}
-        </p>
-      </div>
-    </div>
-    
-    {/* Collapse/Expand button - now just visual, click handled by parent */}
-    <button
-      type="button"
-      className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors pointer-events-none"
-    >
-      {isTemplateAccordionOpen ? (
-        <ChevronUp className="w-5 h-5" style={{ color: themeUtils.getTextColor(false) }} />
-      ) : (
-        <ChevronDown className="w-5 h-5" style={{ color: themeUtils.getTextColor(false) }} />
-      )}
-    </button>
-  </div>
-</div>
+              <div 
+                  className="px-5 py-4 border-b cursor-pointer transition-colors "
+                  style={{ borderColor: themeUtils.getBorderColor() }}
+                  onClick={() => setIsTemplateAccordionOpen((prev) => !prev)}
+                >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="p-2 rounded-xl"
+                      style={{ backgroundColor: selectedTemplate ? "#eff6ff" : themeUtils.getBgColor("input") }}
+                    >
+                      <FileText
+                        className="w-5 h-5"
+                        style={{ color: selectedTemplate ? "#3b82f6" : themeUtils.getTextColor(false) }}
+                      />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm flex items-center gap-2" style={{ color: themeUtils.getTextColor(true) }}>
+                        Select Email Template
+                        <span className="text-red-500">*</span>
+                        {selectedTemplate && (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                            <CheckCircle className="w-3 h-3" /> Selected: {selectedTemplate.name}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Collapse/Expand button - now just visual, no click handler needed */}
+                  <button
+                    type="button"
+                    className="p-1.5 rounded-lg transition-colors pointer-events-none"
+                  >
+                    {isTemplateAccordionOpen ? (
+                      <ChevronUp className="w-5 h-5" style={{ color: themeUtils.getTextColor(false) }} />
+                    ) : (
+                      <ChevronDown className="w-5 h-5" style={{ color: themeUtils.getTextColor(false) }} />
+                    )}
+                  </button>
+                </div>
+              </div>
 
               {/* Template List (embedded ListTemplate) */}
               {isTemplateAccordionOpen && (
@@ -697,7 +708,7 @@ const Notification = () => {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={`inline-block text-xs px-2.5 py-1 rounded-full font-medium ${selectedTemplate.color} bg-opacity-20 text-opacity-80`}>
+                        <span className={`inline-block text-xs px-2.5 py-1 rounded-full font-medium ${getTypeColor(selectedTemplate.type)}`}>
                           {selectedTemplate.type}
                         </span>
                       </div>

@@ -308,9 +308,9 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                   <div className="flex items-start gap-3">
                     <Home className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
                     <div>
-                      <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Properties</p>
+                      <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Buildings</p>
                       <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                        {communityData.total_properties || 0} Properties, {communityData.total_units || 0} Units
+                        {communityData.total_properties || 0} Buildings, {communityData.total_units || 0} Units
                       </p>
                     </div>
                   </div>
@@ -345,7 +345,7 @@ const ViewCommunity = ({ community: propCommunity, onClose }) => {
                     <Home className="w-5 h-5" style={{ color: theme.headerBg || "#6366f1" }} />
                   </div>
                   <div>
-                    <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Total Properties</p>
+                    <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Total Buildings</p>
                     <p className="text-2xl font-bold" style={{ color: themeUtils.getTextColor(true) }}>
                       {communityData.total_properties || 0}
                     </p>
