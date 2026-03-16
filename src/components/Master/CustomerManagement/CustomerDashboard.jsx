@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect } from "react";
-import { Users, FileText, Home, Eye } from "lucide-react";
+import { Users, FileText, Home } from "lucide-react";
 import { useTheme } from "../../../ui/Settings/themeUtils.jsx";
 import { useToast } from "../../../ui/common/CostumeTost.jsx";
 import Card, { CardHeader, CardTitle, CardContent, StatsCard } from "../../../ui/common/Card.jsx";
@@ -10,6 +11,7 @@ import Table from "../../../ui/common/Table.jsx";
 import CommonDialog from "../../../ui/common/CommonDialog";
 import Pagination from "../../../ui/common/Pagination.jsx";
 import Button from "../../../ui/Common/Button.jsx";
+import ThreeDotsMenu from "../../../ui/common/ThreeDotsMenu";
 
 // Import API base from config (adjust path as needed)
 import { API_URL_CUSTOMER } from "../../../../config.js";
@@ -38,70 +40,63 @@ const CustomerDashboard = () => {
   const primaryText = themeUtils.getTextColor(true);
   const secondaryText = themeUtils.getTextColor(false);
 
-  // Fetch dashboard data
-const fetchDashboardData = async () => {
+  // Fetch dashboard data (unchanged)
+  const fetchDashboardData = async () => {
+    setStatsLoading(true);
+    setLoading(true);
 
-  setStatsLoading(true);
-  setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/customer-dashboard`);
+      const response = await res.json();
 
-  try {
+      if (!response.success) {
+        throw new Error(response.message || "Dashboard API error");
+      }
+      const dashboard =
+        response?.data?.fn_get_customer_dashboard ||
+        response?.fn_get_customer_dashboard ||
+        {};
+      console.log("DASHBOARD OBJECT:", dashboard);
 
-    const res = await fetch(`${API_BASE}/customer-dashboard`);
-    const response = await res.json();
+      // STATS
+      setStats(
+        (dashboard.stats || []).map((stat) => ({
+          icon:
+            stat.icon === "Home"
+              ? Home
+              : stat.icon === "Users"
+              ? Users
+              : FileText,
+          iconBg: stat.iconBg,
+          iconColor: stat.iconColor,
+          title: stat.title,
+          value: stat.value,
+        }))
+      );
+      // TABLE
+      const handovers = dashboard.handovers || [];
+      const formatted = handovers.map((item, index) => ({
+        id: item.id || index + 1,
+        customerName: item.customerName || "-",
+        unitNumber: item.unitNumber || "-",
+        propertyName: item.propertyName || "-",
+        handoverDate: item.handoverDate || "-",
+        documents: item.documents || "Pending",
+        status: item.status || "Pending",
+        documentsList: item.documentsList || [],
+        documentsFullDetails: item.documentsFullDetails || []   // <-- full details with URLs
+      }));
+      setHandoverData(formatted);
 
-    if (!response.success) {
-      throw new Error(response.message || "Dashboard API error");
+    } catch (error) {
+      console.error("Dashboard fetch error:", error);
+      toast.error("Error", error.message || "Dashboard load failed");
+    } finally {
+      setStatsLoading(false);
+      setLoading(false);
     }
+  };
 
-    const dashboard = response?.data?.fn_get_customer_dashboard || {};
-
-    console.log("DASHBOARD OBJECT:", dashboard);
-
-    // STATS
-    setStats(
-      (dashboard.stats || []).map((stat) => ({
-        icon:
-          stat.icon === "Home"
-            ? Home
-            : stat.icon === "Users"
-            ? Users
-            : FileText,
-        iconBg: stat.iconBg,
-        iconColor: stat.iconColor,
-        title: stat.title,
-        value: stat.value,
-        subtitle: stat.subtitle,
-        trendLabel: stat.trendLabel
-      }))
-    );
-
-    // TABLE
-    const formatted = (dashboard.handovers || []).map((item, index) => ({
-      id: item.id || index + 1,
-      customerName: item.customerName || "-",
-      unitNumber: item.unitNumber || "-",
-      propertyName: item.propertyName || "-",
-      handoverDate: item.handoverDate || "-",
-      documents: item.documents || "Pending",
-      status: item.status || "Pending",
-      documentsList: item.documentsList || [],
-      documentsFullDetails: item.documentsFullDetails || []
-    }));
-
-    setHandoverData(formatted);
-
-  } catch (error) {
-
-    console.error("Dashboard fetch error:", error);
-    toast.error("Error", error.message || "Dashboard load failed");
-
-  } finally {
-
-    setStatsLoading(false);
-    setLoading(false);
-
-  }
-};
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -110,19 +105,28 @@ const fetchDashboardData = async () => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [perPage]);
+
   // Filtering
   const filteredData = handoverData.filter(row =>
     row.customerName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination
-  const paginatedData = perPage === "All" || perPage <= 0
-    ? filteredData
-    : filteredData.slice((currentPage - 1) * perPage, currentPage * perPage);
+  // Pagination logic (same as ListCommunity)
+  const paginatedData =
+    perPage === "All" || perPage === Infinity || perPage <= 0
+      ? filteredData
+      : filteredData.slice(
+          (currentPage - 1) * perPage,
+          currentPage * perPage
+        );
 
-  const totalPages = perPage === "All" || perPage <= 0
-    ? 1
-    : Math.ceil(filteredData.length / perPage);
+  const totalPages =
+    perPage === "All" || perPage === Infinity || perPage <= 0
+      ? 1
+      : Math.ceil(filteredData.length / perPage);
 
   const openDocumentsModal = (customer) => {
     setSelectedCustomer(customer);
@@ -136,6 +140,66 @@ const fetchDashboardData = async () => {
       case "Pending": return "text-red-600 bg-red-50";
       default: return "text-gray-600 bg-gray-50";
     }
+  };
+
+  // Helper to render document preview based on type/url
+  const renderDocumentPreview = (doc) => {
+    // If doc is a string (fallback), show as plain text
+    if (typeof doc === 'string') {
+      return (
+        <div className="flex items-center gap-2 p-2 border rounded bg-gray-50">
+          <FileText size={20} className="text-blue-500" />
+          <span className="text-sm text-gray-700">{doc}</span>
+          <span className="text-xs text-gray-400 ml-auto">(preview not available)</span>
+        </div>
+      );
+    }
+
+    // If doc has a url, try to preview
+    if (doc.url) {
+      const fileExtension = doc.url.split('.').pop()?.toLowerCase();
+      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileExtension);
+      const isPdf = fileExtension === 'pdf';
+
+      return (
+        <div className="space-y-1 border rounded p-2">
+          <div className="flex items-center gap-2">
+            <FileText size={16} className="text-blue-500" />
+            <span className="text-sm font-medium text-gray-700">{doc.name || 'Document'}</span>
+            <a
+              href={doc.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-600 hover:underline ml-auto"
+            >
+              Open
+            </a>
+          </div>
+          {isImage && (
+            <img
+              src={doc.url}
+              alt={doc.name}
+              className="max-h-40 max-w-full object-contain border rounded"
+            />
+          )}
+          {isPdf && (
+            <iframe
+              src={doc.url}
+              title={doc.name}
+              className="w-full h-40 border rounded"
+            />
+          )}
+        </div>
+      );
+    }
+
+    // Fallback: show just the name
+    return (
+      <div className="flex items-center gap-2 p-2 border rounded bg-gray-50">
+        <FileText size={20} className="text-blue-500" />
+        <span className="text-sm text-gray-700">{doc.name || doc}</span>
+      </div>
+    );
   };
 
   const tableHeaders = [
@@ -162,12 +226,8 @@ const fetchDashboardData = async () => {
       <td className="px-4 py-3 text-sm" style={{ color: secondaryText }}>
         {row.handoverDate}
       </td>
-      <td className="px-4 py-3 text-sm">
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          row.status === "Handed Over" ? "bg-green-100 text-green-800" :
-          row.status === "In Progress" ? "bg-blue-100 text-blue-800" :
-          "bg-yellow-100 text-yellow-800"
-        }`}>
+      <td className="px-4 py-3 text-sm" style={{ color: secondaryText }}>
+        <span>
           {row.status}
         </span>
       </td>
@@ -177,24 +237,19 @@ const fetchDashboardData = async () => {
         </span>
       </td>
       <td className="px-4 py-3 text-sm text-center">
-  {row.documents !== "Pending" && (
-    <Button
-      variant="ghost"
-      size="sm"
-      icon={Eye}
-      onClick={() => openDocumentsModal(row)}
-      className="text-blue-600 hover:text-blue-800"
-      title="View Documents"
-    >
-      View
-    </Button>
-  )}
-</td>
+        {/* Only show menu if documents exist */}
+        {row.documents !== "Pending" && (
+          <ThreeDotsMenu
+            onView={() => openDocumentsModal(row)}
+            viewTitle="View Documents"
+          />
+        )}
+      </td>
     </>
   );
 
   return (
-    <div className="space-y-4 px-4 py-2">
+    <div className="space-y-4 px-3 py-4 pb-12">
       <CardHeader className="px-0">
         <div className="flex flex-col md:flex-row items-center justify-between gap-2">
           <CardTitle themeUtils={themeUtils}>
@@ -209,79 +264,70 @@ const fetchDashboardData = async () => {
         ))}
       </div>
 
-      <Card padding="p-0" className="overflow-hidden">
-        <CardHeader className="p-4 border-b">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle style={{ color: primaryText }}>
-              Handover Details
-            </CardTitle>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
-              <RecordsPerPage value={perPage} onChange={setPerPage} className="shrink-0" />
-              <SearchBar
-                placeholder="Search by customer name..."
-                value={searchTerm}
-                onChange={setSearchTerm}
-                size="medium"
-                className="w-full sm:w-64"
-              />
-            </div>
+      {/* Handover Details section – restructured to match ListCommunity pagination */}
+      <CardHeader className="p-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+          <CardTitle style={{ color: primaryText }}>
+            Handover Details
+          </CardTitle>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+            <RecordsPerPage value={perPage} onChange={setPerPage} className="shrink-0" />
+            <SearchBar
+              placeholder="Search by customer name..."
+              value={searchTerm}
+              onChange={setSearchTerm}
+              size="medium"
+              className="w-full sm:w-64"
+            />
           </div>
-        </CardHeader>
+        </div>
+      </CardHeader>
 
-        <CardContent className="p-0">
-          <div className="overflow-x-auto hide-scrollbar">
-            <div className="inline-block min-w-full align-middle">
-              <Table
-                headers={tableHeaders}
-                data={paginatedData}
-                renderRow={renderRow}
-                loading={loading}
-                emptyMessage="No handover records found."
-              />
-            </div>
-          </div>
+      {/* Table – exactly the same wrapper as ListCommunity */}
+      <div className="overflow-x-auto hide-scrollbar -mx-4 sm:mx-0 pb-9">
+        <div className="inline-block min-w-full align-middle">
+          <Table
+            headers={tableHeaders}
+            data={paginatedData}
+            renderRow={renderRow}
+            loading={loading}
+            emptyMessage="No handover records found."
+          />
+        </div>
+      </div>
 
-          {filteredData.length > 0 && (
-            <div className="px-4 py-3 border-t flex flex-col sm:flex-row justify-between items-center gap-4">
-              <p className="text-sm" style={{ color: secondaryText }}>
-                Showing {paginatedData.length} of {filteredData.length} entries
-              </p>
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                themeUtils={themeUtils}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Pagination – exactly like ListCommunity */}
+      {paginatedData.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          themeUtils={themeUtils}
+        />
+      )}
 
+      {/* Documents Modal with Previews using documentsFullDetails */}
       <CommonDialog
         header={`Documents - ${selectedCustomer?.customerName || ''}`}
         visible={showModal}
         onHide={() => setShowModal(false)}
         position="center"
-        width="500px"
+        width="75vw"
+        fullHeight={false}
       >
-        <div className="p-6">
-          {selectedCustomer?.documentsList?.length > 0 ? (
-            <div className="space-y-3">
+        <div className="p-6 max-h-[80vh] overflow-y-auto">
+          {selectedCustomer?.documentsFullDetails?.length > 0 ? (
+            <div className="space-y-4">
               <p className="text-sm text-gray-600 mb-4">
                 Documents for {selectedCustomer.customerName} - Unit {selectedCustomer.unitNumber}
               </p>
-              <ul className="divide-y border rounded-lg">
-                {selectedCustomer.documentsList.map((doc, idx) => (
-                  <li key={idx} className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
-                    <div className="flex items-center gap-2">
-                      <FileText size={16} className="text-blue-500" />
-                     <span>
-                      {typeof doc === "string" ? doc : doc.name || doc.description}
-                    </span>
-                    </div>
-                  </li>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {selectedCustomer.documentsFullDetails.map((doc, idx) => (
+                  <div key={idx} className="border rounded-lg p-3 bg-white shadow-sm">
+                    {renderDocumentPreview(doc)}
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           ) : (
             <div className="text-center py-8">

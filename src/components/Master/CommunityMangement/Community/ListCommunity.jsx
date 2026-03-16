@@ -3,17 +3,17 @@ import { Plus, Download, RefreshCw } from "lucide-react";
 import { useTheme } from "../../../../ui/Settings/themeUtils";
 import { useToast } from "../../../../ui/common/CostumeTost";
 import { confirmDialog } from "primereact/confirmdialog";
-import SearchBar from "../../../../ui/Common/SearchBar";
-import RecordsPerPage from "../../../../ui/Common/RecordsPerPage";
-import Table from "../../../../ui/Common/Table";
+import SearchBar from "../../../../ui/common/SearchBar";
+import RecordsPerPage from "../../../../ui/common/RecordsPerPage";
+import Table from "../../../../ui/common/Table";
 import ThreeDotsMenu from "../../../../ui/common/ThreeDotsMenu";
-import Button from "../../../../ui/Common/Button";
-import { CardHeader, CardTitle } from "../../../../ui/Common/Card";
-import CommonDialog from "../../../../ui/Common/CommonDialog";
+import Button from "../../../../ui/common/Button";
+import { CardHeader, CardTitle } from "../../../../ui/common/Card";
+import CommonDialog from "../../../../ui/common/CommonDialog";
 import AddCommunity from "./AddCommunity";
 import ViewCommunity from "./ViewCommunity";
 import EditCommunity from "./EditCommunity";
-import Pagination from "../../../../ui/Common/Pagination";
+import Pagination from "../../../../ui/common/Pagination";
 import { API_URL_COMMUNITY } from "../../../../../config";
 import CustomConfirmDialog from "../../../../ui/common/CustomConfirmDialog"; // Import the custom component
 
@@ -374,7 +374,7 @@ const ListCommunity = () => {
       </CardHeader>
 
       {/* Table */}
-      <div className="overflow-x-auto hide-scrollbar -mx-4 sm:mx-0 pl-4 pr-4">
+      <div className="overflow-x-auto hide-scrollbar -mx-4 sm:mx-0 pl-4 pr-4 pb-10">
         <div className="inline-block min-w-full align-middle">
           <Table
             headers={tableHeaders}
@@ -383,11 +383,7 @@ const ListCommunity = () => {
             loading={loading}
             emptyMessage="No communities found. Click 'Add' to create one."
           />
-        </div>
-      </div>
-
-      {/* Pagination */}
-      {paginatedCommunities.length > 0 && (
+           {paginatedCommunities.length > 0 && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -395,6 +391,11 @@ const ListCommunity = () => {
           themeUtils={themeUtils}
         />
       )}
+        </div>
+      </div>
+
+      {/* Pagination */}
+     
 
       {/* Drawers / Dialogs */}
       <CommonDialog

@@ -442,7 +442,7 @@ const getStatusColor = (status) => {
       </CardHeader>
 
       <CardContent>
-        <div className="overflow-x-auto hide-scrollbar -mx-4 sm:mx-0 pl-4 pr-4">
+        <div className="overflow-x-auto hide-scrollbar -mx-4 sm:mx-0 pl-4 pr-4 pb-10">
           <div className="inline-block min-w-full align-middle">
             <Table
               headers={tableHeaders}
@@ -452,10 +452,7 @@ const getStatusColor = (status) => {
               emptyMessage="No units found. Click 'Add' to create your first unit."
               sortable={false}
             />
-          </div>
-        </div>
-
-        {paginatedUnits.length > 0 && (
+            {paginatedUnits.length > 0 && (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -463,6 +460,10 @@ const getStatusColor = (status) => {
             themeUtils={themeUtils}
           />
         )}
+          </div>
+        </div>
+
+        
       </CardContent>
 
       {/* Dialogs */}

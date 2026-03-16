@@ -395,7 +395,7 @@ const fetchProperties = async () => {
       </div>
 
       <CardContent>
-        <div className="overflow-x-auto hide-scrollbar px-4 py-0">
+        <div className="overflow-x-auto hide-scrollbar px-4 pb-10 py-0">
           <div className="inline-block min-w-full align-middle">
             <Table
               headers={tableHeaders}
@@ -403,12 +403,7 @@ const fetchProperties = async () => {
               renderRow={renderRow}
               loading={loading}
               emptyMessage="No buildings found. Click 'Add' to create your first building."
-            />
-          </div>
-        </div>
-
-        {/* Use the shared Pagination component */}
-        {paginatedProperty.length > 0 && (
+            /> {paginatedProperty.length > 0 && (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -416,6 +411,11 @@ const fetchProperties = async () => {
             themeUtils={themeUtils}
           />
         )}
+          </div>
+        </div>
+
+        {/* Use the shared Pagination component */}
+       
       </CardContent>
 
       {/* Drawers / Dialogs */}
