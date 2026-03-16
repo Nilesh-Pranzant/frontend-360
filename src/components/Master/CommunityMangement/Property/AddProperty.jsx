@@ -25,7 +25,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
     manager_name: "",
     manager_contact: "",
     total_units: "",
-    total_floors: "",  // Added total_floors field
+    total_floors: "",
     description: "",
   });
 
@@ -40,7 +40,7 @@ const AddProperty = ({ onClose, onSuccess }) => {
     manager_name: "",
     manager_contact: "",
     total_units: "",
-    total_floors: "",  // Added total_floors error field
+    total_floors: "",
     description: "",
   });
 
@@ -120,13 +120,12 @@ const AddProperty = ({ onClose, onSuccess }) => {
       const userStr = localStorage.getItem('user');
       if (userStr) {
         const user = JSON.parse(userStr);
-        return user.id || user.user_id || null;
+        return user.id || user.user_id || 1;
       }
     } catch (e) {
       console.error("Error getting user ID:", e);
     }
-    console.warn("No user ID found in localStorage");
-    return null;
+    return 1; // Default user ID
   };
 
   // Get current country's digit requirement
@@ -162,12 +161,13 @@ const AddProperty = ({ onClose, onSuccess }) => {
         const result = await response.json();
 
         if (response.ok) {
-          const communityList = Array.isArray(result) ? result : result.data || [];
+          const communityList = result.data || result || [];
           setCommunities(communityList);
         } else {
           toast.error("Error", result.message || "Failed to load communities");
         }
       } catch (error) {
+        console.error("Error fetching communities:", error);
         toast.error("Error", "Failed to load communities.");
       } finally {
         setLoadingCommunities(false);
@@ -229,13 +229,11 @@ const AddProperty = ({ onClose, onSuccess }) => {
     };
     let isValid = true;
 
-    // Community validation
     if (!form.community_id) {
       newErrors.community_id = "Community is required";
       isValid = false;
     }
 
-    // Building Name validation
     if (!form.property_name.trim()) {
       newErrors.property_name = "Building name is required";
       isValid = false;
@@ -247,7 +245,6 @@ const AddProperty = ({ onClose, onSuccess }) => {
       isValid = false;
     }
 
-    // Address 1 validation
     if (!form.address1.trim()) {
       newErrors.address1 = "Address is required";
       isValid = false;
@@ -256,13 +253,11 @@ const AddProperty = ({ onClose, onSuccess }) => {
       isValid = false;
     }
 
-    // Address 2 validation
     if (form.address2 && form.address2.length > 200) {
       newErrors.address2 = "Address cannot exceed 200 characters";
       isValid = false;
     }
 
-    // City validation
     if (!form.city.trim()) {
       newErrors.city = "City is required";
       isValid = false;
@@ -271,13 +266,11 @@ const AddProperty = ({ onClose, onSuccess }) => {
       isValid = false;
     }
 
-    // Country code validation
     if (!form.country_code) {
       newErrors.country_code = "Country code is required";
       isValid = false;
     }
 
-    // Manager name validation
     if (form.manager_name) {
       const nameRegex = /^[A-Za-z\s]+$/;
       if (!nameRegex.test(form.manager_name.trim())) {
@@ -289,7 +282,6 @@ const AddProperty = ({ onClose, onSuccess }) => {
       }
     }
 
-    // Manager Contact validation
     if (form.manager_contact) {
       const phoneRegex = /^[0-9]+$/;
       if (!phoneRegex.test(form.manager_contact)) {
@@ -304,19 +296,16 @@ const AddProperty = ({ onClose, onSuccess }) => {
       }
     }
 
-    // Total Units validation
     if (form.total_units && parseInt(form.total_units) < 0) {
       newErrors.total_units = "Total units cannot be negative";
       isValid = false;
     }
 
-    // Total Floors validation
     if (form.total_floors && parseInt(form.total_floors) < 0) {
       newErrors.total_floors = "Total floors cannot be negative";
       isValid = false;
     }
 
-    // Description validation
     if (form.description && form.description.length > 500) {
       newErrors.description = "Description cannot exceed 500 characters";
       isValid = false;
@@ -448,86 +437,75 @@ const AddProperty = ({ onClose, onSuccess }) => {
     handleInputChange("manager_contact", truncated);
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      toast.error("Validation Error", "Please fix the errors in the form before submitting.");
-      return;
+const handleSubmit = async () => {
+  if (!validateForm()) {
+    toast.error("Validation Error", "Please fix the errors in the form before submitting.");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const userId = getCurrentUserId();
+
+    if (!userId) {
+      throw new Error("User ID not found. Please login again.");
     }
 
-    setLoading(true);
+    const formData = new FormData();
 
-    try {
-      // Get user ID
-      const userId = getCurrentUserId();
-      if (!userId) {
-        throw new Error("User ID not found. Please log in again.");
-      }
+    formData.append("building_name", form.property_name.trim());
+    formData.append("community_id", form.community_id);
+    formData.append("address_line1", form.address1.trim());
+    formData.append("address_line2", form.address2 || "");
+    formData.append("city", form.city.trim());
+    formData.append("manager_name", form.manager_name || "");
+    formData.append(
+      "manager_contact",
+      form.manager_contact
+        ? `${form.country_code}${form.manager_contact}`
+        : ""
+    );
+    formData.append("total_units", form.total_units || 0);
+    formData.append("total_floors", form.total_floors || 0);
+    formData.append("building_description", form.description || "");
+    formData.append("is_active", true);
+    formData.append("created_by", userId);
 
-      // Prepare JSON data matching the database function parameters
-      const jsonData = {
-        property_name: form.property_name.trim(),
-        community_id: parseInt(form.community_id),
-        address_line1: form.address1.trim(),
-        address_line2: form.address2?.trim() || '',
-        city: form.city.trim(),
-        manager_name: form.manager_name?.trim() || '',
-        manager_contact: form.manager_contact ? `${form.country_code}${form.manager_contact}` : '',
-        total_units: form.total_units ? parseInt(form.total_units) : 0,
-        total_floors: form.total_floors ? parseInt(form.total_floors) : 0,  // Added total_floors to API data
-        property_description: form.description?.trim() || '',
-        created_by: userId
-      };
-
-      // Create FormData
-      const formData = new FormData();
-      
-      // Append the JSON data as a string
-      formData.append('data', JSON.stringify(jsonData));
-      
-      // Append file if selected
-      if (file) {
-        formData.append('property_image', file);
-      }
-
-      // Log for debugging
-      console.log("Sending data:", jsonData);
-
-      // Make API call
-      const response = await fetch(`${baseURL}/api/properties`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      // Check if response is OK
-      if (!response.ok) {
-        let errorText;
-        try {
-          errorText = await response.text();
-          const errorData = JSON.parse(errorText);
-          throw new Error(errorData.message || `Server error: ${response.status}`);
-        } catch {
-          throw new Error(`Server responded with status ${response.status}: ${errorText || 'Unknown error'}`);
-        }
-      }
-
-      const data = await response.json();
-      console.log("Server response:", data);
-
-      // Check the response format
-      if (data.success === true) {
-        // toast.success("Success", "Property added successfully!");
-        if (onSuccess) onSuccess(data);
-        if (onClose) onClose();
-      } else {
-        throw new Error(data.error || data.message || "Failed to create building. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error creating building:", error);
-      toast.error("Error", error.message || "Failed to create building. Please try again.");
-    } finally {
-      setLoading(false);
+    if (file) {
+      formData.append("profile_picture", file);
     }
-  };
+
+    console.log("Sending building data:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ":", pair[1]);
+    }
+
+    const response = await fetch(`${baseURL}/api/properties`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    console.log("Server response:", data);
+
+    if (!response.ok || data.success === false) {
+      throw new Error(data.message || "Failed to create building");
+    }
+
+    toast.success("Success", "Building created successfully!");
+
+    if (onSuccess) onSuccess(data);
+    if (onClose) onClose();
+
+  } catch (error) {
+    console.error("Create building error:", error);
+    toast.error("Error", error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const hasErrors = () => {
     return Object.values(errors).some((error) => error !== "");
@@ -542,7 +520,6 @@ const AddProperty = ({ onClose, onSuccess }) => {
       !hasErrors();
   };
 
-  // Get current country's digit requirement for display
   const requiredDigits = getCurrentCountryDigits();
 
   return (
@@ -857,8 +834,6 @@ const AddProperty = ({ onClose, onSuccess }) => {
                   </p>
                 )}
               </div>
- 
-
 
               {/* Total Floors */}
               <div>
@@ -931,8 +906,6 @@ const AddProperty = ({ onClose, onSuccess }) => {
                   </p>
                 )}
               </div>
-
-
             </div>
 
             {/* Description */}

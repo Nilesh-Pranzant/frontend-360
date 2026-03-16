@@ -1,6 +1,3 @@
-
-
-
 import emailjs from "@emailjs/browser";
 import React, { useState, useEffect } from "react";
 import {
@@ -343,11 +340,11 @@ const Notification = () => {
       {/* ── Email Preview / Confirm Dialog ── */}
       <CustomConfirmDialog
         visible={confirmDialogVisible}
-        onHide={handleSendReject}
+        onHide={handleSendReject} 
         width="680px"
         header={
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shrink-0">
+            <div className="p-3  from-blue-500 to-purple-600 rounded-2xl shrink-0">
               <Mail className="w-6 h-6 text-white" />
             </div>
             <div>

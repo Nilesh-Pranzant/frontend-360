@@ -73,44 +73,53 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
 
   // Fetch properties when community is selected
   useEffect(() => {
-    const fetchProperties = async () => {
-      if (!form.community_id) {
-        setProperties([]);
-        return;
-      }
+   const fetchProperties = async () => {
+    
+  if (!form.community_id) {
+    setProperties([]);
+    return;
+  }
+  try {
+    setLoadingProperties(true);
 
-      try {
-        setLoadingProperties(true);
-        const response = await fetch(
-          `${propertyBaseURL}/api/properties/by-community/${form.community_id}`
-        );
-        const data = await response.json();
-        console.log("Fetched properties:", data); // Debug log
+    const response = await fetch(
+      `${propertyBaseURL}/api/properties/by-community/${form.community_id}`
+    );
 
-        if (response.ok) {
-          // setProperties(data.data);
-          // setProperties(Array.isArray(data.data) ? data.data : []);
-          setProperties(
-            data.data.map(p => ({
-              ...p,
-              property_id: Number(p.property_id),
-              total_floors: Number(p.total_floors)
-            }))
-          );
-        } else {
-          console.error("Error fetching properties:", data);
-          toast.error("Error", "Failed to load properties");
-        }
-      } catch (error) {
-        console.error("Error fetching properties:", error);
-        toast.error("Error", "Failed to load properties. Please check your connection.");
-      } finally {
-        setLoadingProperties(false);
-      }
-    };
+    const data = await response.json();
+
+    if (response.ok) {
+ const buildings = Array.isArray(data)
+  ? data
+  : Array.isArray(data?.result)
+  ? data.result
+  : Array.isArray(data?.data)
+  ? data.data
+  : [];
+
+setProperties(
+  buildings.map((p) => ({
+    property_id: Number(p.building_id),
+    property_name: p.building_name,
+    total_floors: Number(p.total_floors || 0),
+  }))
+);
+
+    } else {
+      toast.error("Error", "Failed to load buildings");
+    }
+
+  } catch (error) {
+    console.error("Error fetching buildings:", error);
+    toast.error("Error", "Failed to load buildings.");
+  } finally {
+    setLoadingProperties(false);
+  }
+};
 
     fetchProperties();
   }, [form.community_id, propertyBaseURL]);
+  
 
   // Update community name when community ID changes
   useEffect(() => {
@@ -164,16 +173,23 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
       setLoading(true);
 
       // Prepare data for API - match the exact field names from your API response
-      const unitData = {
-        community_id: parseInt(form.community_id),
-        property_id: parseInt(form.property_id),
-        unit_number: form.unit_number,
-        customer_name: form.customer_name || null,
-        floor_number: form.floor_number ? parseInt(form.floor_number) : null, // Changed to floor_number and parse as integer
-        unit_type: form.unit_type || null,
-        status: form.status || "unsold",
-        unit_description: form.description || null
-      };
+     const unitData = {
+  community_id: parseInt(form.community_id),
+  building_id: parseInt(form.property_id),
+
+  unit_number: form.unit_number,
+  customer_name: form.customer_name || null,
+
+  floor_number: form.floor_number
+    ? parseInt(form.floor_number)
+    : null,
+
+  unit_type: form.unit_type || null,
+
+  status: form.status || "unsold",
+
+  unit_description: form.description || null
+};
 
       console.log("Sending unit data:", unitData); // Debug log
 
@@ -344,7 +360,7 @@ const AddUnit = ({ onClose, onSuccess, baseURL: propBaseURL }) => {
                 >
                   <option value="unsold">Unsold</option>
                   <option value="sold">Sold</option>
-                  <option value="reserved">Reserved</option>
+                  
                 </select>
               </div>
               

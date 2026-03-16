@@ -266,7 +266,7 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
 
     setForm({
       community_id: property.community_id || "",
-      property_name: property.property_name || "",
+      property_name: property.building_name || "",
       address_line1: property.address_line1 || "",
       address_line2: property.address_line2 || "",
       city: property.city || "",
@@ -279,10 +279,10 @@ const EditProperty = ({ property: propProperty, onClose, onSuccess, baseURL: pro
     });
 
     // Set existing image if available
-    if (property.property_image) {
-      const imageUrl = property.property_image.startsWith('http') 
-        ? property.property_image 
-        : `${baseURL}${property.property_image}`;
+    if (property.profile_picture) {
+  const imageUrl = property.profile_picture.startsWith('http')
+    ? property.profile_picture
+    : `${baseURL}${property.profile_picture}`;
       setExistingImage(imageUrl);
       setPreviewUrl(imageUrl);
     }
@@ -501,18 +501,20 @@ const handleInputChange = (field, value) => {
       const userId = getCurrentUserId();
 
       // Prepare JSON data
-      const jsonData = {
+        const jsonData = {
+        building_id: propertyId,
         community_id: parseInt(form.community_id),
-        property_name: form.property_name.trim(),
+        building_name: form.property_name.trim(),
         address_line1: form.address_line1?.trim() || null,
         address_line2: form.address_line2?.trim() || null,
         city: form.city?.trim() || null,
-        country: selectedCountryName,
         manager_name: form.manager_name?.trim() || null,
-        manager_contact: form.manager_contact ? `${form.country_code}${form.manager_contact}` : null,
-        total_floors: form.total_floors ? parseInt(form.total_floors) : null, // Added total_floors
+        manager_contact: form.manager_contact
+          ? `${form.country_code}${form.manager_contact}`
+          : null,
+        total_floors: form.total_floors ? parseInt(form.total_floors) : null,
         total_units: form.total_units ? parseInt(form.total_units) : 0,
-        property_description: form.property_description?.trim() || null,
+        building_description: form.property_description?.trim() || null,
         updated_by: userId
       };
 
@@ -524,7 +526,7 @@ const handleInputChange = (field, value) => {
         // Use FormData if there's a file
         const formData = new FormData();
         formData.append('data', JSON.stringify(jsonData));
-        formData.append('property_image', file);
+       formData.append('profile_picture', file);
         
         response = await fetch(`${baseURL}/api/properties/${propertyId}`, {
           method: 'PUT',

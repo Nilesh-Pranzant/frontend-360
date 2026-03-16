@@ -75,36 +75,51 @@ const EditUnit = ({ unit: propUnit, onClose, onSuccess, baseURL: propBaseURL }) 
 
   // Fetch properties function
   const fetchProperties = async (communityId) => {
-    if (!communityId) {
-      setProperties([]);
-      return;
-    }
+  if (!communityId) {
+    setProperties([]);
+    return;
+  }
 
-    try {
-      setLoadingProperties(true);
-      const response = await fetch(
-        `${propertyBaseURL}/api/properties/by-community/${communityId}`
+  try {
+    setLoadingProperties(true);
+
+    const response = await fetch(
+      `${propertyBaseURL}/api/properties/by-community/${communityId}`
+    );
+
+    const data = await response.json();
+
+    console.log("Buildings API response:", data);
+
+    if (response.ok) {
+
+      const buildings = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.result)
+        ? data.result
+        : Array.isArray(data?.data)
+        ? data.data
+        : [];
+
+      setProperties(
+        buildings.map((p) => ({
+          property_id: Number(p.building_id || p.property_id),
+          property_name: p.building_name || p.property_name,
+          total_floors: Number(p.total_floors || 0),
+        }))
       );
-      const data = await response.json();
 
-      if (response.ok && data.success) {
-        setProperties(
-          data.data.map((p) => ({
-            ...p,
-            property_id: Number(p.property_id),
-            total_floors: Number(p.total_floors),
-          }))
-        );
-      } else {
-        setProperties([]);
-      }
-    } catch (error) {
-      console.error("Error fetching properties:", error);
+    } else {
       setProperties([]);
-    } finally {
-      setLoadingProperties(false);
     }
-  };
+
+  } catch (error) {
+    console.error("Error fetching buildings:", error);
+    setProperties([]);
+  } finally {
+    setLoadingProperties(false);
+  }
+};
 
   // Load unit data on component mount
   useEffect(() => {

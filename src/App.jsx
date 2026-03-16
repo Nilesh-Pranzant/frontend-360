@@ -27,8 +27,13 @@ import AdminRoutes from "./admin/routes/AdminRoutes";
 import ListCommunity from "./components/Master/CommunityMangement/Community/ListCommunity.jsx";
 import UnitList from "./components/Master/CommunityMangement/Unit/UnitList.jsx"
 import ListProperty from "./components/Master/CommunityMangement/Property/ListProperty.jsx"
-import Notification from "./components/Master/Customer/Notification.jsx";
-import ListTemplate from "./components/Master/Customer/ListTemplate.jsx";
+import Notification from "./components/Master/CustomerManagement/Notification.jsx";
+import ListTemplate from "./components/Master/CustomerManagement/ListTemplate.jsx";
+
+
+import CustomerList from "./components/Master/CustomerManagement/CustomerList.jsx";
+import CustomerDashboard from "./components/Master/CustomerManagement/CustomerDashboard.jsx";
+
 
 
 
@@ -228,6 +233,8 @@ const AppContent = () => {
                           <Route path="/property" element={<ListProperty />} />
                           <Route path="/notification" element={<Notification />} />
                           <Route path="/list-templates" element={<ListTemplate />} />
+                          <Route path="/customerlist" element={<CustomerList />} />
+                          <Route path="/customerdashboard" element={<CustomerDashboard />} />
 
 
 

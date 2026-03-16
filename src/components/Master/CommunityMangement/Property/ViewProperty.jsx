@@ -326,10 +326,10 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                       border: `1px solid ${themeUtils.getBorderColor()}`,
                     }}
                   >
-                    {property.property_image ? (
+                    {property.profile_picture ? (
                       <img
-                        src={`${baseURL}${property.property_image}`}
-                        alt={property.property_name}
+                        src={`${baseURL}${property.profile_picture}`}
+                        alt={property.building_name}
                         className="w-full h-full object-cover rounded-lg"
                         onError={(e) => {
                           e.target.onerror = null;
@@ -350,7 +350,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                   </div>
                   
                   {/* Property Code Badge */}
-                  {property.property_code && (
+                  {property.building_code && (
                     <div className="text-center">
                       <span 
                         className="px-3 py-1 rounded-full text-sm"
@@ -359,7 +359,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                           color: theme.headerBg || "#6366f1"
                         }}
                       >
-                        Code: {property.property_code}
+                        Code: {property.building_code}
                       </span>
                     </div>
                   )}
@@ -380,15 +380,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Left Column */}
                     <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <Building className="w-5 h-5 mt-0.5" style={{ color: theme.headerBg || "#6366f1" }} />
-                        <div>
-                          <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Building Name</p>
-                          <p className="text-base font-medium" style={{ color: themeUtils.getTextColor(true) }}>
-                            {property.property_name || "N/A"}
-                          </p>
-                        </div>
-                      </div>
+                    
 
                    
 
@@ -397,7 +389,7 @@ const ViewProperty = ({ propertyId, onClose, baseURL: propBaseURL }) => {
                         <div>
                           <p className="text-sm" style={{ color: themeUtils.getTextColor(false, true) }}>Building Code</p>
                           <p className="text-base" style={{ color: themeUtils.getTextColor(true) }}>
-                            {property.property_code || "N/A"}
+                            {property.building_code || "N/A"}
                           </p>
                         </div>
                       </div>

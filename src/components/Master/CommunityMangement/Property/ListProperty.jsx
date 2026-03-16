@@ -42,56 +42,68 @@ const ListProperty = () => {
   const baseURL = API_URL_PROPERTY || "http://192.168.1.39:5000";
 
   /* ================= FETCH PROPERTIES ================= */
-  const fetchProperties = async () => {
-    try {
-      setLoading(true);
-      
-      const url = search 
-        ? `${baseURL}/api/properties?search=${encodeURIComponent(search)}`
-        : `${baseURL}/api/properties`;
-      
-      const response = await fetch(url);
-      const data = await response.json();
+/* ================= FETCH BUILDINGS ================= */
+const fetchProperties = async () => {
+  try {
+    setLoading(true);
 
-      if (response.ok) {
-        // Normalize data for frontend UI
-        const normalized = data.map((p) => ({
-          id: p.property_id,
-          property_id: p.property_id,
-          PropertyName: p.property_name || "-",
-          property_name: p.property_name || "-",
-          communityName: p.community_name || "-",
-          community_id: p.community_id,
-          totalUnits: p.total_units || 0,
-          total_units: p.total_units || 0,
-          subscription: p.subscription || "-",
-          city: p.city || "-",
-          // country: p.country || "-",
-          totalFloors: p.total_floors || 0,
-          total_floors: p.total_floors || 0,
-          addressLine1: p.address_line1 || "",
-          address_line1: p.address_line1 || "",
-          addressLine2: p.address_line2 || "",
-          address_line2: p.address_line2 || "",
-          zipCode: p.zip_code || "",
-          zip_code: p.zip_code || "",
-          property_image: p.property_image || null,
-          description: p.description || "",
-          is_active: p.is_active,
-        }));
+    const url = search
+      ? `${baseURL}/api/properties?search=${encodeURIComponent(search)}`
+      : `${baseURL}/api/properties`;
 
-        setProperties(normalized);
-      } else {
-        console.error("Error fetching properties:", data);
-        toast.error("Error", "Failed to fetch properties. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error loading properties:", error);
-      toast.error("Error", "Failed to load properties. Please check your connection.");
-    } finally {
-      setLoading(false);
+    const response = await fetch(url);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Failed to fetch buildings");
     }
-  };
+
+    // Backend now returns { success:true, data:[] }
+    const buildings = result.data || result;
+
+    const normalized = buildings.map((b) => ({
+      id: b.building_id,
+      building_id: b.building_id,
+
+      PropertyName: b.building_name || "-",
+      building_name: b.building_name || "-",
+
+      communityName: b.community_name || "-",
+      community_id: b.community_id,
+
+      totalUnits: b.total_units || 0,
+      total_units: b.total_units || 0,
+
+      city: b.city || "-",
+
+      totalFloors: b.total_floors || 0,
+      total_floors: b.total_floors || 0,
+
+      addressLine1: b.address_line1 || "",
+      address_line1: b.address_line1 || "",
+
+      addressLine2: b.address_line2 || "",
+      address_line2: b.address_line2 || "",
+
+      manager_name: b.manager_name || "",
+      manager_contact: b.manager_contact || "",
+
+      building_description: b.building_description || "",
+
+      profile_picture: b.profile_picture || null,
+
+      is_active: b.is_active,
+    }));
+
+    setProperties(normalized);
+
+  } catch (error) {
+    console.error("Error loading buildings:", error);
+    toast.error("Error", error.message || "Failed to load buildings.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Initial fetch and fetch on search change
   useEffect(() => {
